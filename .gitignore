@@ -1,15 +1,18 @@
 .env
 .vscode
-circuits/
-node_modules/
 
 app/styles/tailwind.css
 
 build
 public/build
 
+circuits.zip
+circuits/
+
 cypress/screenshots
 cypress/videos
+
+node_modules/
 
 prisma/data.db
 prisma/data.db-journal
