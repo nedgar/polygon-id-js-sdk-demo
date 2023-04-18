@@ -1,0 +1,34 @@
+{
+  "@context": [
+    {
+      "@version": 1.1,
+      "@protected": true,
+      "id": "@id",
+      "type": "@type",
+      "PassportCredential": {
+        "@id": "https://raw.githubusercontent.com/nedgar/polygon-id-js-sdk-demo/main/schemas/json-ld/Passport-v1.json-ld#PassportCredential",
+        "@context": {
+          "@version": 1.1,
+          "@protected": true,
+          "id": "@id",
+          "type": "@type",
+          "kyc-vocab": "https://github.com/iden3/claim-schema-vocab/blob/main/credentials/kyc.md#",
+          "passport-vocab": "https://github.com/nedgar/polygon-id-js-sdk-demo/blob/main/schemas/vocab/passport.md#",
+          "xsd": "http://www.w3.org/2001/XMLSchema#",
+          "countryCode": {
+            "@id": "kyc-vocab:countryCode",
+            "@type": "xsd:integer"
+          },
+          "documentType": {
+            "@id": "kyc-vocab:documentType",
+            "@type": "xsd:integer"
+          },
+          "passportNumber": {
+            "@id": "passport-vocab:passportNumber",
+            "@type": "xsd:string"
+          }
+        }
+      }
+    }
+  ]
+}
