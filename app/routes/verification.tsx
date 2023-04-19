@@ -181,8 +181,9 @@ export default function VerificationPage() {
                 defaultValue={actionData?.challengeType}
               >
                 <option>--Select an option--</option>
-                <option value="countryNotSanctioned">Country of residence is not sanctioned</option>
-                <option value="userIsAdult">User is an adult (21+ years)</option>
+                <option value="id:passportNumberMatches">ID: Passport number matches</option>
+                <option value="kyc:countryNotSanctioned">KYC: Country of residence is not sanctioned</option>
+                <option value="kyc:userIsAdult">KYC: User is an adult (21+ years)</option>
               </select>
               <input type="hidden" name="verifierDID" value={verifierDID} />
               <button

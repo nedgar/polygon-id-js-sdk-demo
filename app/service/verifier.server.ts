@@ -1,7 +1,6 @@
 import { auth, loaders, protocol, resolver } from "@iden3/js-iden3-auth";
 import {
   AuthorizationRequestMessage,
-  AuthorizationResponseMessage,
   CircuitId,
   ICircuitStorage,
   PROTOCOL_CONSTANTS,
@@ -19,21 +18,31 @@ import { getCircuitStorage } from "./circuits.server";
 
 const KYC_CONTEXT_URL =
   "https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld";
+const PASSPORT_CONTEXT_URL =
+  "https://raw.githubusercontent.com/nedgar/polygon-id-js-sdk-demo/main/schemas/json-ld/Passport-v1.json-ld";
+
 
 export enum ChallengeType {
-  COUNTRY_NOT_SANCTIONED = "countryNotSanctioned",
-  USER_IS_ADULT = "userIsAdult",
+  ID_PASSPORT_NUMBER_MATCHES = "id:passportNumberMatches",
+  KYC_COUNTRY_NOT_SANCTIONED = "kyc:countryNotSanctioned",
+  KYC_USER_IS_ADULT = "kyc:userIsAdult",
 }
 
 export function getAuthRequestMessage(verifierDID: string, challengeType: ChallengeType) {
   switch (challengeType) {
-    case ChallengeType.COUNTRY_NOT_SANCTIONED:
+    case ChallengeType.ID_PASSPORT_NUMBER_MATCHES:
+      return getAuthRequest(
+        verifierDID,
+        getPassportNumberMatchesRequest(),
+        "Verify passport number matches."
+      );
+    case ChallengeType.KYC_COUNTRY_NOT_SANCTIONED:
       return getAuthRequest(
         verifierDID,
         getCountryNotSanctionedProofRequest(),
         "Verify country of residence is not sanctioned."
       );
-    case ChallengeType.USER_IS_ADULT:
+    case ChallengeType.KYC_USER_IS_ADULT:
       return getAuthRequest(
         verifierDID,
         getUserIsAdultProofRequest(),
@@ -65,6 +74,25 @@ function getCountryNotSanctionedProofRequest(): ZeroKnowledgeProofRequest {
       credentialSubject: {
         countryCode: {
           $nin: countryCodes,
+        },
+      },
+    },
+  };
+}
+
+function getPassportNumberMatchesRequest(): ZeroKnowledgeProofRequest {
+  const passportNumber = "L898902C3";
+  return {
+    id: 2,
+    circuitId: CircuitId.AtomicQuerySigV2,
+    optional: false,
+    query: {
+      allowedIssuers: ["*"],
+      type: "PassportCredential",
+      context: PASSPORT_CONTEXT_URL,
+      credentialSubject: {
+        passportNumber: {
+          $eq: passportNumber,
         },
       },
     },

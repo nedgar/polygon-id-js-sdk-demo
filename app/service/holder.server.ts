@@ -1,9 +1,12 @@
 import {
   AuthorizationRequestMessage,
   AuthorizationResponseMessage,
+  JSONObject,
   W3CCredential,
-  ZKPRequestWithCredential
+  ZKPRequestWithCredential,
+  ZeroKnowledgeProofRequest,
 } from "@0xpolygonid/js-sdk";
+import { Poseidon } from "@iden3/js-crypto";
 import { DID } from "@iden3/js-iden3-core";
 import { Token } from "@iden3/js-jwz";
 
@@ -31,15 +34,15 @@ export async function generateAuthResponse(
 
   const credential = await credentialWallet.findById(credentialId);
   invariant(credential, `credential not found: ${credentialId}`);
-  
+
   const reqWithCred: ZKPRequestWithCredential = {
-    req: scope[0],
+    req: hashQueryValueIfNeeded(scope[0]),
     credential,
     credentialSubjectProfileNonce: 0,
   };
 
   const { authHandler } = await initServices(identityWallet, credentialWallet, dataStorage.states);
-  
+
   const authProfileNonce = 0;
   const result = await authHandler.generateAuthorizationResponse(
     DID.parse(userDID),
@@ -53,10 +56,51 @@ export async function generateAuthResponse(
   return {
     ...result,
     tokenDecoded: {
-      "headers": JSON.parse(parsedToken.serializeHeaders()),
-      "payload": JSON.parse(parsedToken.getPayload()),
-      "zkProof": parsedToken.zkProof,
+      headers: JSON.parse(parsedToken.serializeHeaders()),
+      payload: JSON.parse(parsedToken.getPayload()),
+      zkProof: parsedToken.zkProof,
     },
     credential, // the matching credential is not sent to verifier, but is returned to show in UI
   };
+}
+
+function parseQuerySubject(subject: any) {
+  invariant(typeof subject === "object");
+
+  const [fieldName, ...otherFields] = Object.keys(subject);
+  invariant(otherFields.length === 0);
+
+  const [op, ...otherOps] = Object.keys(subject[fieldName]);
+  invariant(otherOps.length === 0);
+
+  const value = (subject[fieldName] as any)[op];
+  return [fieldName, op, value];
+}
+
+function poseidonHash(value: string) {
+  const bytes = new TextEncoder().encode(value);
+  return Poseidon.hashBytes(bytes);
+}
+
+function hashQueryValueIfNeeded(req: ZeroKnowledgeProofRequest): ZeroKnowledgeProofRequest {
+  const {
+    query: { credentialSubject, ...queryRest },
+    ...reqRest
+  } = req;
+
+  const [fieldName, op, value] = parseQuerySubject(credentialSubject);
+
+  if (fieldName === "passportNumber" && typeof value === "string") {
+    return {
+      query: {
+        credentialSubject: {
+          [fieldName]: { [op]: poseidonHash(value).toString() },
+        },
+        ...queryRest,
+      },
+      ...reqRest,
+    };
+  }
+
+  return req;
 }

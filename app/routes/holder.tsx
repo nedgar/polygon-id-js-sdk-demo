@@ -205,6 +205,7 @@ export default function HolderPage() {
               <label>Choose credential type: </label>
               <select className="border" name="credentialType">
                 <option value="">--Please select an option--</option>
+                <option value="id:passport">ID: Passport</option>
                 <option value="kyc:age">KYC: Age (date of birth)</option>
                 <option value="kyc:countryOfResidence">KYC: Country of Residence</option>
               </select>
