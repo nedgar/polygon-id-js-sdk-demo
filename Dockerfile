@@ -12,7 +12,13 @@ FROM node:18-bullseye-slim as base
 ENV NODE_ENV production
 
 # Install openssl for Prisma
-RUN apt-get update && apt-get install -y openssl sqlite3
+RUN apt-get update && apt-get install -y openssl sqlite3 unzip
+
+# Download the iden3 circuit files and unzip the ones we need
+FROM base as iden3-circuits
+
+ADD https://iden3-circuits-bucket.s3.eu-west-1.amazonaws.com/latest.zip circuits.zip
+RUN unzip circuits.zip "*.json" "*.wasm" "*.zkey" -x "credentialAtomicQueryMTP*" "sybilCredentialAtomic*" -d /circuits && rm circuits.zip
 
 # Install all node_modules, including dev dependencies
 FROM base as deps
@@ -21,7 +27,7 @@ WORKDIR /myapp
 
 COPY package.json package-lock.json .npmrc ./
 RUN npm install --include=dev
-RUN du -md 3 . | sort -nr | head -n 25
+RUN du -md 4 . | sort -nr | head -n 25
 
 # Build the app
 FROM deps as build
@@ -32,13 +38,15 @@ ENV DATABASE_URL=file:/data/sqlite.db
 
 COPY prisma prisma
 COPY tsconfig.json .
-RUN ls -al . && ls -al prisma
 RUN npm run setup
 
 COPY . .
 RUN npm run build
+
+COPY --from=iden3-circuits /circuits /myapp/app/circuits
+
 RUN npm prune --omit=dev
-RUN du -md 3 . | sort -nr | head -n 25
+RUN du -md 4 . | sort -nr | head -n 25
 
 # Finally, build the production image with minimal footprint
 FROM build

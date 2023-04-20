@@ -1,7 +1,13 @@
-/node_modules
-*.log
 .DS_Store
 .env
+.env.docker
+.git
+*.log
+
 /.cache
-/public/build
 /build
+/node_modules
+/public/build
+
+/app/circuits
+/prisma/data.db
