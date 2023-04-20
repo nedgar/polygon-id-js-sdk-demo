@@ -30,8 +30,8 @@
     "/public/build"
   ],
   "dependencies": {
-    "@0xpolygonid/js-sdk": "^1.0.0-beta.5",
-    "@iden3/js-iden3-auth": "^1.0.0-beta.7",
+    "@0xpolygonid/js-sdk": "1.0.0-beta.5",
+    "@iden3/js-iden3-auth": "1.0.0-beta.7",
     "@prisma/client": "^4.11.0",
     "@remix-run/node": "^1.14.3",
     "@remix-run/react": "^1.14.3",
@@ -87,6 +87,13 @@
     "vite": "^4.1.4",
     "vite-tsconfig-paths": "^3.6.0",
     "vitest": "^0.29.3"
+  },
+  "overrides": {
+    "@iden3/js-crypto": "1.0.0-beta.1",
+    "@iden3/js-iden3-core": "1.0.0-beta.2",
+    "@iden3/js-jwz": "1.0.0-beta.2",
+    "@iden3/js-merkletree": "1.0.0-beta.2",
+    "snarkjs": "0.5.0"
   },
   "engines": {
     "node": ">=14"
