@@ -1,0 +1,30 @@
+{
+  "@context": [
+    {
+      "@version": 1.1,
+      "@protected": true,
+      "id": "@id",
+      "type": "@type",
+      "AssetsUnderManagement": {
+        "@id": "https://raw.githubusercontent.com/nedgar/polygon-id-js-sdk-demo/main/schemas/json-ld/AssetsUnderManagement-v1.json-ld#AssetsUnderManagement",
+        "@context": {
+          "@version": 1.1,
+          "@protected": true,
+          "id": "@id",
+          "type": "@type",
+          "kyc-vocab": "https://github.com/iden3/claim-schema-vocab/blob/main/credentials/kyc.md#",
+          "assets-vocab": "https://github.com/nedgar/polygon-id-js-sdk-demo/blob/main/schemas/vocab/assets.md#",
+          "xsd": "http://www.w3.org/2001/XMLSchema#",
+          "currencyCode": {
+            "@id": "assets-vocab:currencyCode",
+            "@type": "xsd:integer"
+          },
+          "valuation": {
+            "@id": "assets-vocab:valuation",
+            "@type": "xsd:integer"
+          }
+        }
+      }
+    }
+  ]
+}
