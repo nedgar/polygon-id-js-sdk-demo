@@ -85,7 +85,10 @@ async function seed() {
     });
   }
 
-  console.log(`Database has been seeded. 🌱`);
+  const numUsers = await prisma.user.count();
+  const numPosts = await prisma.post.count();
+  const numNotes = await prisma.note.count();
+  console.log(`Database has been seeded with ${numUsers} users, ${numPosts} posts, and ${numNotes} notes. 🌱`);
 }
 
 seed()
