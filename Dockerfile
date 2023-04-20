@@ -1,7 +1,14 @@
-# base node image
-FROM node:16-bullseye-slim as base
+# To build and test, use e.g.:
+# - docker build -t polygon-id-js-sdk-demo --progress plain .
+# - docker run -p 8080:8080 --env-file .env.docker polygon-id-js-sdk-demo
+# where .env.docker has (without quotes):
+# SESSION_SECRET=t0p-s3cr3t
+# RPC_URL=https://polygon-mumbai.g.alchemy.com/v2/YOUR_ALCHEMY_KEY
 
-# set for base and all layer that inherit from it
+# base node image
+FROM node:18-bullseye-slim as base
+
+# set for base and all layers that inherit from it
 ENV NODE_ENV production
 
 # Install openssl for Prisma
@@ -12,33 +19,29 @@ FROM base as deps
 
 WORKDIR /myapp
 
-ADD package.json package-lock.json .npmrc ./
-RUN npm install --production=false
-
-# Setup production node_modules
-FROM base as production-deps
-
-WORKDIR /myapp
-
-COPY --from=deps /myapp/node_modules /myapp/node_modules
-ADD package.json package-lock.json .npmrc ./
-RUN npm prune --production
+COPY package.json package-lock.json .npmrc ./
+RUN npm install --include=dev
+RUN du -md 3 . | sort -nr | head -n 25
 
 # Build the app
-FROM base as build
+FROM deps as build
 
 WORKDIR /myapp
 
-COPY --from=deps /myapp/node_modules /myapp/node_modules
+ENV DATABASE_URL=file:/data/sqlite.db
 
-ADD prisma .
-RUN npx prisma generate
+COPY prisma prisma
+COPY tsconfig.json .
+RUN ls -al . && ls -al prisma
+RUN npm run setup
 
-ADD . .
+COPY . .
 RUN npm run build
+RUN npm prune --omit=dev
+RUN du -md 3 . | sort -nr | head -n 25
 
 # Finally, build the production image with minimal footprint
-FROM base
+FROM build
 
 ENV DATABASE_URL=file:/data/sqlite.db
 ENV PORT="8080"
@@ -49,13 +52,4 @@ RUN echo "#!/bin/sh\nset -x\nsqlite3 \$DATABASE_URL" > /usr/local/bin/database-c
 
 WORKDIR /myapp
 
-COPY --from=production-deps /myapp/node_modules /myapp/node_modules
-COPY --from=build /myapp/node_modules/.prisma /myapp/node_modules/.prisma
-
-COPY --from=build /myapp/build /myapp/build
-COPY --from=build /myapp/public /myapp/public
-COPY --from=build /myapp/package.json /myapp/package.json
-COPY --from=build /myapp/start.sh /myapp/start.sh
-COPY --from=build /myapp/prisma /myapp/prisma
-
-ENTRYPOINT [ "./start.sh" ]
+ENTRYPOINT [ "npm", "run", "start" ]

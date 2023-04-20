@@ -1,4 +1,5 @@
 .env
+.env.docker
 .vscode
 
 app/styles/tailwind.css
