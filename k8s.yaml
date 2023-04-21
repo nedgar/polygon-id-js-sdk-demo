@@ -1,0 +1,56 @@
+# See https://cloud.google.com/build/docs/build-push-docker-image
+# e.g. gcloud builds submit --region=europe-west1 --tag europe-west1-docker.pkg.dev/openhabour-11223/polygon-id-js-sdk-demo/v0.3-20230421-for-server:tag1
+---
+apiVersion: "v1"
+kind: "Namespace"
+metadata:
+  name: "github-polygon"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "polygon-id-js-sdk-demo-service"
+  namespace: "github-polygon"
+  labels:
+    app: "polygon-id-js-sdk-demo-service"
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+  selector:
+    app: "polygon-id-js-sdk-demo"
+  type: LoadBalancer
+---
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: "polygon-id-js-sdk-demo"
+  namespace: "github-polygon"
+  labels:
+    app: "polygon-id-js-sdk-demo"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "polygon-id-js-sdk-demo"
+  template:
+    metadata:
+      labels:
+        app: "polygon-id-js-sdk-demo"
+    spec:
+      restartPolicy: Always
+      containers:
+        - name: "polygon-id-js-sdk-demo"
+          image: "europe-west1-docker.pkg.dev/openhabour-11223/polygon-id-js-sdk-demo/v0.2-20230421-for-server:tag1"
+          env:
+            - name: "SESSION_SECRET"
+              valueFrom:
+                configMapKeyRef:
+                  key: "session_secret"
+                  name: "polygon-id-js-sdk-demo-config"
+            - name: "RPC_URL"
+              valueFrom:
+                configMapKeyRef:
+                  key: "rpc_url"
+                  name: "polygon-id-js-sdk-demo-config"
