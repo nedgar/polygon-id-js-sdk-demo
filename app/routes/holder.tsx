@@ -35,6 +35,8 @@ interface HolderActionData {
 
 const HOLDER_ALIAS = "holder";
 
+export const meta = () => [{ title: "Holder - Polygon ID JS SDK Demo" }];
+
 export const loader = async ({ request }: LoaderArgs): Promise<TypedResponse<HolderLoaderData>> => {
   const userId = await requireUserId(request);
   const keyData = await getKeyData(userId, HOLDER_ALIAS);
@@ -205,6 +207,9 @@ export default function HolderPage() {
               <label>Choose credential type: </label>
               <select className="border" name="credentialType">
                 <option value="">--Please select an option--</option>
+                <option value="fin:assetsUnderManagement">
+                  Financial: Assets Under Management
+                </option>
                 <option value="id:passport">ID: Passport</option>
                 <option value="kyc:age">KYC: Age (date of birth)</option>
                 <option value="kyc:countryOfResidence">KYC: Country of Residence</option>
@@ -237,6 +242,13 @@ export default function HolderPage() {
                 /> */}
               </div>
             ))}
+          </Section>
+          <Section title="Verify Credentials" className="mt-4 border">
+            Click{" "}
+            <Link className="text-blue-500 underline" to="/verification">
+              here
+            </Link>{" "}
+            to start a credential verification flow.
           </Section>
         </div>
       </div>

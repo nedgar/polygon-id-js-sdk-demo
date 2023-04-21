@@ -3,7 +3,7 @@ import { Link } from "@remix-run/react";
 
 import { useOptionalUser } from "~/utils";
 
-export const meta = () => [{ title: "Remix Notes" }];
+export const meta = () => [{ title: "Polygon ID JS SDK Demo" }];
 
 export default function Index() {
   const user = useOptionalUser();

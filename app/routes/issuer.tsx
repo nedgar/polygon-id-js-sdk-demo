@@ -25,6 +25,8 @@ interface IssuerData {
 
 const ISSUER_ALIAS = "issuer";
 
+export const meta = () => [{ title: "Issuer - Polygon ID JS SDK Demo" }];
+
 export const loader = async ({ request }: LoaderArgs): Promise<TypedResponse<IssuerData>> => {
   const userId = await requireUserId(request);
   const keyData = await getKeyData(userId, ISSUER_ALIAS);

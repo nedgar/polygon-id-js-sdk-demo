@@ -43,6 +43,8 @@ interface VerificationActionData {
 
 const VERIFIER_DID = "did:polygonid:polygon:mumbai:2qMFtSnvRGKFDVY5MawZENXv6eAQnGgKTNwid1wJoG";
 
+export const meta = () => [{ title: "Verification - Polygon ID JS SDK Demo" }];
+
 export const loader = async ({
   request,
 }: LoaderArgs): Promise<TypedResponse<VerificationLoaderData>> => {
