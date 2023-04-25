@@ -3,9 +3,11 @@ import type {
   AuthorizationResponseMessage,
   W3CCredential,
 } from "@0xpolygonid/js-sdk";
+import { ZKPResponse } from "@iden3/js-iden3-auth/dist/types/protocol";
 import type { ActionArgs, LoaderArgs, TypedResponse } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { Form, Link, useActionData, useLoaderData } from "@remix-run/react";
+import { Fragment } from "react";
 import QRCode from "react-qr-code";
 import invariant from "tiny-invariant";
 
@@ -162,6 +164,8 @@ export default function VerificationPage() {
     console.error(`Error: ${actionData.error}`);
   }
 
+  const zkpResponses = actionData?.authResponse?.body?.scope ?? [];
+
   return (
     <div className="px-4 py-4">
       <h1 className="mb-4 text-2xl font-bold">Polygon ID JS-SDK Demo – Verification</h1>
@@ -183,8 +187,12 @@ export default function VerificationPage() {
                 defaultValue={actionData?.challengeType}
               >
                 <option>--Select an option--</option>
-                <option value="id:passportNumberMatches">ID: Passport number matches</option>
-                <option value="kyc:countryNotSanctioned">KYC: Country of residence is not sanctioned</option>
+                <option value="id:passportNumberMatches">
+                  ID: Passport number matches and country OK
+                </option>
+                <option value="kyc:countryNotSanctioned">
+                  KYC: Country of residence is not sanctioned
+                </option>
                 <option value="kyc:userIsAdult">KYC: User is an adult (21+ years)</option>
               </select>
               <input type="hidden" name="verifierDID" value={verifierDID} />
@@ -214,7 +222,10 @@ export default function VerificationPage() {
           <Section title="5: Verifier Receives JWZ and Verifies Proof" className="mt-4 border">
             {typeof actionData?.isResponseProofValid !== "undefined" && (
               <div className="mt-4">
-                <p>Proof is valid: {actionData.isResponseProofValid ? "Hooray! yes it is" : "Oops, no"}</p>
+                <p>
+                  Proof is valid:{" "}
+                  {actionData.isResponseProofValid ? "Hooray! yes it is" : "Oops, no"}
+                </p>
               </div>
             )}
           </Section>
@@ -315,13 +326,15 @@ export default function VerificationPage() {
             )}
             {actionData?.authResponse && (
               <>
-                <br />
-                <p>ZK Proof Response:</p>
-                {Array.isArray(actionData.authResponse.body?.scope) && (
-                  <div className="border">
-                    <ZKProofDescription proof={actionData.authResponse.body.scope[0]} />
-                  </div>
-                )}
+                {zkpResponses.map((zkpResp, i) => (
+                  <Fragment key={i}>
+                    <br />
+                    <p>ZK Proof Response{zkpResponses.length > 1 ? ` ${i + 1}` : ""}:</p>
+                    <div className="border" key={i}>
+                      <ZKProofDescription proof={zkpResp} />
+                    </div>
+                  </Fragment>
+                ))}
                 <br />
                 <p>Auth Response Message:</p>
                 <div className="border">
@@ -334,8 +347,8 @@ export default function VerificationPage() {
             {actionData?.authResponse && actionData?.tokenDecoded && (
               <>
                 <p>
-                  A JWZ token is a kind of JWT (JSON Web Token) containing three parts, in base-64 encoded JSON:
-                  headers, payload, and signature proof.
+                  A JWZ token is a kind of JWT (JSON Web Token) containing three parts, in base-64
+                  encoded JSON: headers, payload, and signature proof.
                 </p>
                 <br />
                 <p>JWZ headers:</p>

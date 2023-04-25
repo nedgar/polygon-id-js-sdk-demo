@@ -21,12 +21,16 @@ interface Props {
 }
 
 export function ZKProofDescription({ circuitId, proof }: Props) {
-  console.log("ZKProofDescription.proof:", proof);
+  const header: Array<[string, any] | undefined> = [];
+  proof.id && header.push(["Request ID", proof.id]);
+  proof.circuitId && header.push(["Circuit ID", proof.circuitId]),
+  header.length > 0 && header.push(undefined);
+
   const entries: Array<[string, any] | undefined> = [
-    proof.id ? ["Request ID", proof.id] : undefined,
-    proof.circuitId ? ["Circuit ID", proof.circuitId] : undefined,
+    ...header,
     ["Proof", ""],
     ...Object.entries(proof.proof).map(([key, val]): [string, any] => [`  ${key}`, val]),
+    undefined,
     ["Public signals", ""],
     ...decodePublicSignals(circuitId ?? proof.circuitId, proof.pub_signals),
   ];
@@ -35,7 +39,7 @@ export function ZKProofDescription({ circuitId, proof }: Props) {
 }
 
 function decodePublicSignals(circuitId: string, pubSignals: string[]): Array<[string, string]> {
-  console.log("decodePublicSignals:", {circuitId, pubSignals});
+  console.log("decodePublicSignals:", { circuitId, pubSignals });
   if (circuitId === "authV2") {
     const obj = {
       "user ID": pubSignals[0],
@@ -55,12 +59,12 @@ function decodePublicSignals(circuitId: string, pubSignals: string[]): Array<[st
       "issuer ID": pubSignals[idx++],
       "is revocation checked": pubSignals[idx++],
       "issuer claim non-rev state": pubSignals[idx++],
-      "timestamp": new Date(Number(pubSignals[idx++]) * 1000).toUTCString(),
+      timestamp: new Date(Number(pubSignals[idx++]) * 1000).toUTCString(),
       "claim schema hash": pubSignals[idx++],
       "claim path not exists": pubSignals[idx++],
       "claim path key": pubSignals[idx++],
       "slot index": pubSignals[idx++],
-      "operator": `${(op = Number(pubSignals[idx++]))} (${Operator[op]})`,
+      operator: `${(op = Number(pubSignals[idx++]))} (${Operator[op]})`,
       "value(s)": isMultiValued(op) ? pubSignals.slice(idx).join(", ") : pubSignals[idx],
     };
     return Object.entries(obj).map(([key, val]) => [`  ${key}`, `${val}`]);

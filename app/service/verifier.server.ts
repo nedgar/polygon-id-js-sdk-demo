@@ -21,7 +21,6 @@ const KYC_CONTEXT_URL =
 const PASSPORT_CONTEXT_URL =
   "https://raw.githubusercontent.com/nedgar/polygon-id-js-sdk-demo/main/schemas/json-ld/Passport-v1.json-ld";
 
-
 export enum ChallengeType {
   ID_PASSPORT_NUMBER_MATCHES = "id:passportNumberMatches",
   KYC_COUNTRY_NOT_SANCTIONED = "kyc:countryNotSanctioned",
@@ -33,36 +32,36 @@ export function getAuthRequestMessage(verifierDID: string, challengeType: Challe
     case ChallengeType.ID_PASSPORT_NUMBER_MATCHES:
       return getAuthRequest(
         verifierDID,
+        "Verify passport number matches and issuing country is not sanctioned.",
         getPassportNumberMatchesRequest(),
-        "Verify passport number matches."
+        getPassportCountryNotSanctionedRequest()
       );
     case ChallengeType.KYC_COUNTRY_NOT_SANCTIONED:
       return getAuthRequest(
         verifierDID,
-        getCountryNotSanctionedProofRequest(),
-        "Verify country of residence is not sanctioned."
+        "Verify country of residence is not sanctioned.",
+        getCountryNotSanctionedProofRequest()
       );
     case ChallengeType.KYC_USER_IS_ADULT:
       return getAuthRequest(
         verifierDID,
-        getUserIsAdultProofRequest(),
-        "Verify user is at least 21 years old."
+        "Verify user is at least 21 years old.",
+        getUserIsAdultProofRequest()
       );
     default:
       throw new Error("Unsupported challenge type");
   }
 }
 
-function getCountryNotSanctionedProofRequest(): ZeroKnowledgeProofRequest {
-  const sanctionedCountries: Alpha2Code[] = [
-    "AF", // Afghanistan,
-    "IR", // Iran
-    "KP", // North Korea
-    "SS", // South Sudan
-    "SY", // Syria
-  ];
+const sanctionedCountries: Alpha2Code[] = [
+  "AF", // Afghanistan,
+  "IR", // Iran
+  "KP", // North Korea
+  "SS", // South Sudan
+  "SY", // Syria
+];
 
-  const countryCodes = sanctionedCountries.map(getNumericCountryCode);
+function getCountryNotSanctionedProofRequest(): ZeroKnowledgeProofRequest {
   return {
     id: 2,
     circuitId: CircuitId.AtomicQuerySigV2,
@@ -73,7 +72,7 @@ function getCountryNotSanctionedProofRequest(): ZeroKnowledgeProofRequest {
       context: KYC_CONTEXT_URL,
       credentialSubject: {
         countryCode: {
-          $nin: countryCodes,
+          $nin: sanctionedCountries.map(getNumericCountryCode),
         },
       },
     },
@@ -83,7 +82,7 @@ function getCountryNotSanctionedProofRequest(): ZeroKnowledgeProofRequest {
 function getPassportNumberMatchesRequest(): ZeroKnowledgeProofRequest {
   const passportNumber = "L898902C3";
   return {
-    id: 2,
+    id: 3,
     circuitId: CircuitId.AtomicQuerySigV2,
     optional: false,
     query: {
@@ -93,6 +92,24 @@ function getPassportNumberMatchesRequest(): ZeroKnowledgeProofRequest {
       credentialSubject: {
         passportNumber: {
           $eq: passportNumber,
+        },
+      },
+    },
+  };
+}
+
+function getPassportCountryNotSanctionedRequest(): ZeroKnowledgeProofRequest {
+  return {
+    id: 4,
+    circuitId: CircuitId.AtomicQuerySigV2,
+    optional: false,
+    query: {
+      allowedIssuers: ["*"],
+      type: "PassportCredential",
+      context: PASSPORT_CONTEXT_URL,
+      credentialSubject: {
+        countryCode: {
+          $nin: sanctionedCountries.map(getNumericCountryCode),
         },
       },
     },
@@ -132,8 +149,8 @@ const authRequests = global.__authRequests__;
 
 function getAuthRequest(
   verifierDID: string,
-  proofRequest: ZeroKnowledgeProofRequest,
-  reason: string
+  reason: string,
+  ...proofRequests: ZeroKnowledgeProofRequest[]
 ) {
   const threadId = randomUUID();
   const authRequest: AuthorizationRequestMessage = {
@@ -145,7 +162,7 @@ function getAuthRequest(
     body: {
       callbackUrl: "http://wallet.example.org/callback",
       message: "message to sign",
-      scope: [proofRequest],
+      scope: proofRequests,
       reason,
     },
   };

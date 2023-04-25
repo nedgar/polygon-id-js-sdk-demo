@@ -231,13 +231,14 @@ export async function findMatchingCredentials(
 ) {
   const userDID = getIdentityData(userId, alias)?.did;
   invariant(userDID, "missing user DID");
-  invariant(req?.body?.scope?.length === 1, "only single scope is supported");
+  invariant(req?.body?.scope?.length, "missing or empty scope");
 
   const scope = req.body.scope[0];
   const credentials = await credentialWallet.findByQuery({
     ...scope.query,
     credentialSubjectId: userDID.toString(),
   });
+  // TODO: filter further if multiple scopes
   console.log("Found credentials matching query:", scope.query, credentials);
   return credentials;
 }

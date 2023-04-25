@@ -1,4 +1,4 @@
-import type { AuthorizationRequestMessage } from "@0xpolygonid/js-sdk";
+import type { AuthorizationRequestMessage, JSONObject } from "@0xpolygonid/js-sdk";
 import { ObjectGrid } from "./object-grid";
 
 interface Props {
@@ -20,9 +20,9 @@ interface Props {
 // }
 
 export function AuthRequestDescription({ message }: Props) {
-  const zkpRequest = message.body?.scope[0];
-  const query = zkpRequest?.query;
-  const obj = {
+  const zkpRequests = message.body?.scope ?? [];
+
+  const msgObj = {
     "Message ID": message.id,
     "Thread ID": message.thid,
     "Message type": message.type,
@@ -30,12 +30,56 @@ export function AuthRequestDescription({ message }: Props) {
     To: message.to,
     Message: message.body?.message,
     Reason: message.body?.reason,
-    "Request ID": zkpRequest?.id,
-    "Circuit ID": zkpRequest?.circuitId,
-    "Allowed issuers": ((query?.allowedIssuers as string[]) ?? []).join(", "),
-    "Credential type": query?.type,
-    Query: query?.credentialSubject,
     "Callback URL": message.body?.callbackUrl,
   };
-  return <ObjectGrid obj={obj} />;
+
+  const isMulti = zkpRequests.length > 1;
+  return (
+    <>
+      <ObjectGrid obj={msgObj} />
+      {zkpRequests.map((req, i) => (
+        <>
+          <br />
+          <p>ZK Proof request{isMulti ? ` ${i + 1}` : ""}:</p>
+          <div className="ml-2">
+            <ObjectGrid
+              obj={{
+                "Request ID": req.id,
+                "Circuit ID": req.circuitId,
+                "Allowed issuers": ((req.query?.allowedIssuers as string[]) ?? []).join(", "),
+                "Credential type": req.query?.type,
+                Query: formatQuerySubject(req.query),
+              }}
+            />
+          </div>
+        </>
+      ))}
+    </>
+  );
+}
+
+const OPS: JSONObject = {
+  $eq: "=",
+  $ne: "≠",
+  $lt: "<",
+  $gt: ">",
+  $in: "IN",
+  $nin: "NOT IN",
+};
+
+function formatQuerySubject(query?: JSONObject) {
+  const s = query?.credentialSubject;
+  if (!s) {
+    return "???";
+  }
+
+  return Object.entries(s)
+    .map(([field, comparison]) =>
+      Object.entries(comparison)
+        .map(([op, val]) => `${field} ${OPS[op] ?? op} ${JSON.stringify(val)}`)
+        .join(" AND ")
+    )
+    .join("\n AND ");
+
+  // return JSON.stringify(query.credentialSubject);
 }

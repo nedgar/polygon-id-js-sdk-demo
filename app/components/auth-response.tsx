@@ -13,7 +13,7 @@ export function AuthResponseDescription({ message }: Props) {
     From: message.from,
     To: message.to,
     Message: message.body?.message,
-    Proof: "(see ZK Proof response above)",
+    Proofs: "(see ZK Proofs above)",
   };
   return <ObjectGrid obj={obj} />;
 }

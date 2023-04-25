@@ -28,18 +28,18 @@ export async function generateAuthResponse(
 }> {
   const scope = authRequest.body?.scope;
   invariant(
-    Array.isArray(scope) && scope.length === 1,
-    "auth request scope must be a single ZKP request"
+    Array.isArray(scope) && scope.length >= 1,
+    "auth request scope must have at least one ZKP request"
   );
 
   const credential = await credentialWallet.findById(credentialId);
   invariant(credential, `credential not found: ${credentialId}`);
 
-  const reqWithCred: ZKPRequestWithCredential = {
-    req: hashQueryValueIfNeeded(scope[0]),
+  const requestsWithCreds: ZKPRequestWithCredential[] = scope.map((req) => ({
+    req: hashQueryValueIfNeeded(req),
     credential,
     credentialSubjectProfileNonce: 0,
-  };
+  }));
 
   const { authHandler } = await initServices(identityWallet, credentialWallet, dataStorage.states);
 
@@ -48,7 +48,7 @@ export async function generateAuthResponse(
     DID.parse(userDID),
     authProfileNonce,
     authRequest,
-    [reqWithCred]
+    requestsWithCreds
   );
 
   // parse the token to show in UI

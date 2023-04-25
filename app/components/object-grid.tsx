@@ -11,17 +11,23 @@ export function ObjectGrid({ obj = {}, entries }: Props) {
   entries ??= Object.entries(obj);
   return (
     <div className="grid" style={{ gridTemplateColumns: "auto 1fr", overflowWrap: "anywhere" }}>
-      {entries.map(
-        (entry, j) =>
-          entry && (
-            <Fragment key={j}>
+      {entries.map((entry, i) => (
+        <Fragment key={i}>
+          {entry ? (
+            <>
               <p>
                 <strong>{pad(entry[0])}:</strong>&nbsp;
               </p>
               <p>{stringify(entry[1])}</p>
-            </Fragment>
-          )
-      )}
+            </>
+          ) : (
+            <>
+              <div className="mt-1"></div>
+              <div className="mt-1"></div>
+            </>
+          )}
+        </Fragment>
+      ))}
     </div>
   );
 }
