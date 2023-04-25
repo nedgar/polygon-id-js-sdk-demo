@@ -6,6 +6,12 @@ import { getUserById } from "~/models/user.server";
 
 invariant(process.env.SESSION_SECRET, "SESSION_SECRET must be set");
 
+const HTTPS_PORTS = [443, 9443];
+
+// const isSecure = process.env.NODE_ENV === "production";
+const isSecure = HTTPS_PORTS.includes(Number(process.env.PORT));
+console.log("isSecure:", isSecure);
+
 export const sessionStorage = createCookieSessionStorage({
   cookie: {
     name: "__session",
@@ -13,7 +19,7 @@ export const sessionStorage = createCookieSessionStorage({
     path: "/",
     sameSite: "lax",
     secrets: [process.env.SESSION_SECRET],
-    secure: process.env.NODE_ENV === "production",
+    secure: isSecure,
   },
 });
 
