@@ -98,7 +98,11 @@ export const kms = global.__kms__;
 export const credentialWallet: ICredentialWallet = new CredentialWallet(dataStorage);
 
 // identity wallet
-export const identityWallet: IIdentityWallet = new IdentityWallet(kms, dataStorage, credentialWallet);
+export const identityWallet: IIdentityWallet = new IdentityWallet(
+  kms,
+  dataStorage,
+  credentialWallet
+);
 
 if (!global.__identityData__) {
   global.__identityData__ = new Map<string, Map<string, IdentityData>>();
@@ -230,16 +234,32 @@ export async function findMatchingCredentials(
   req: AuthorizationRequestMessage
 ) {
   const userDID = getIdentityData(userId, alias)?.did;
+  const scope = req?.body?.scope;
   invariant(userDID, "missing user DID");
-  invariant(req?.body?.scope?.length, "missing or empty scope");
+  invariant(scope?.length, "missing or empty scope");
 
-  const scope = req.body.scope[0];
-  const credentials = await credentialWallet.findByQuery({
-    ...scope.query,
+  const [first, ...rest] = scope;
+
+  // find creds matching first query
+  let credentials = await credentialWallet.findByQuery({
+    ...first.query,
     credentialSubjectId: userDID.toString(),
   });
+
+  // filter down further for any other queries, matching against same claim
+  for (const other of rest) {
+    credentials = credentials.filter(
+      async (cred) =>
+        await credentialWallet.findByQuery({
+          ...other.query,
+          claimId: cred.id,
+          credentialSubjectId: userDID.toString(),
+        })
+    );
+  }
+
   // TODO: filter further if multiple scopes
-  console.log("Found credentials matching query:", scope.query, credentials);
+  console.log("Found credentials matching scope:", scope, credentials);
   return credentials;
 }
 

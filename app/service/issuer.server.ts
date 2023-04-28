@@ -4,18 +4,14 @@ import invariant from "tiny-invariant";
 
 import { getNumericCountryCode } from "./countries.server";
 import { getDID, issueCredential } from "./identity.server";
-
-export enum CredentialType {
-  ID_PASSPORT = "id:passport",
-  KYC_AGE = "kyc:age",
-  KYC_COUNTRY_OF_RESIDENCE = "kyc:countryOfResidence",
-}
+import { CredentialRequestType } from "~/shared/credential-request-type";
+import { getNumericCurrencyCode } from "./currencies.server";
 
 export async function requestCredential(
   userId: string,
   issuerAlias: string,
   subjectAlias: string,
-  credentialType: CredentialType
+  credentialType: CredentialRequestType
 ) {
   const issuerDID = getDID(userId, issuerAlias);
   invariant(issuerDID, "missing issuer DID");
@@ -27,17 +23,40 @@ export async function requestCredential(
   return await issueCredential(userId, issuerAlias, req);
 }
 
-function getCredentialRequest(subjectDID: DID, credentialType: CredentialType): CredentialRequest {
-  switch (credentialType) {
-    case CredentialType.ID_PASSPORT:
+function getCredentialRequest(subjectDID: DID, type: CredentialRequestType): CredentialRequest {
+  switch (type) {
+    case CredentialRequestType.FIN_AUM_HIGH:
+      return getFinancialAUMRequest(subjectDID, "SGD", 234567);
+    case CredentialRequestType.FIN_AUM_LOW:
+      return getFinancialAUMRequest(subjectDID, "SGD", 12345);
+    case CredentialRequestType.ID_PASSPORT:
       return getPassportRequest(subjectDID);
-    case CredentialType.KYC_AGE:
+    case CredentialRequestType.KYC_AGE:
       return getKYCAgeRequest(subjectDID);
-    case CredentialType.KYC_COUNTRY_OF_RESIDENCE:
+    case CredentialRequestType.KYC_COUNTRY_OF_RESIDENCE:
       return getKYCCountryOfResidenceRequest(subjectDID);
     default:
-      invariant(false, "invalid credential type");
+      invariant(false, "invalid credential request type");
   }
+}
+
+function getFinancialAUMRequest(
+  subjectDID: DID,
+  currencyCode: string,
+  valuation: number
+): CredentialRequest {
+  invariant(valuation >= 0 && valuation % 1 === 0, "valuation must be a non-negative integer");
+  return {
+    credentialSchema:
+      "https://raw.githubusercontent.com/nedgar/polygon-id-js-sdk-demo/main/schemas/json/AssetsUnderManagement-v1.json",
+    type: "AssetsUnderManagement",
+    credentialSubject: {
+      id: subjectDID.toString(),
+      currencyCode: getNumericCurrencyCode(currencyCode),
+      valuation,
+    },
+    expiration: toSeconds(new Date("2030-01-01T00:00:00Z")),
+  };
 }
 
 function getKYCAgeRequest(subjectDID: DID): CredentialRequest {

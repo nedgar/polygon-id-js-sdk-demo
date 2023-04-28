@@ -1,0 +1,6 @@
+export enum ChallengeType {
+  FIN_AUM_OVER_THRESHOLD = "fin:aumOverThreshold",
+  ID_PASSPORT_MATCHES = "id:passportMatches",
+  KYC_COUNTRY_NOT_SANCTIONED = "kyc:countryNotSanctioned",
+  KYC_USER_IS_ADULT = "kyc:userIsAdult",
+}

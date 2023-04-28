@@ -10,31 +10,35 @@ import { randomUUID } from "crypto";
 import { Alpha2Code } from "i18n-iso-countries";
 import invariant from "tiny-invariant";
 
+import { ChallengeType } from "~/shared/challenge-type";
+
 import { getNumericCountryCode } from "./countries.server";
 import { credentialWallet, dataStorage, identityWallet } from "./identity.server";
 import { initServices } from "./services.server";
 import config from "~/config.server";
 import { getCircuitStorage } from "./circuits.server";
+import { getNumericCurrencyCode } from "./currencies.server";
 
+const FIN_ASSETS_CONTEXT_URL =
+  "https://raw.githubusercontent.com/nedgar/polygon-id-js-sdk-demo/main/schemas/json-ld/AssetsUnderManagement-v1.json-ld";
 const KYC_CONTEXT_URL =
   "https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld";
 const PASSPORT_CONTEXT_URL =
   "https://raw.githubusercontent.com/nedgar/polygon-id-js-sdk-demo/main/schemas/json-ld/Passport-v1.json-ld";
 
-export enum ChallengeType {
-  ID_PASSPORT_NUMBER_MATCHES = "id:passportNumberMatches",
-  KYC_COUNTRY_NOT_SANCTIONED = "kyc:countryNotSanctioned",
-  KYC_USER_IS_ADULT = "kyc:userIsAdult",
-}
-
 export function getAuthRequestMessage(verifierDID: string, challengeType: ChallengeType) {
   switch (challengeType) {
-    case ChallengeType.ID_PASSPORT_NUMBER_MATCHES:
+    case ChallengeType.FIN_AUM_OVER_THRESHOLD:
+      return getAuthRequest(
+        verifierDID,
+        "Verify total assets under management is over threshold.",
+        ...getFinancialAUMRequests("$gt", "SGD", 200_000)
+      );
+    case ChallengeType.ID_PASSPORT_MATCHES:
       return getAuthRequest(
         verifierDID,
         "Verify passport number matches and issuing country is not sanctioned.",
-        getPassportNumberMatchesRequest(),
-        getPassportCountryNotSanctionedRequest()
+        ...getPassportMatchesRequests()
       );
     case ChallengeType.KYC_COUNTRY_NOT_SANCTIONED:
       return getAuthRequest(
@@ -79,41 +83,79 @@ function getCountryNotSanctionedProofRequest(): ZeroKnowledgeProofRequest {
   };
 }
 
-function getPassportNumberMatchesRequest(): ZeroKnowledgeProofRequest {
-  const passportNumber = "L898902C3";
-  return {
-    id: 3,
-    circuitId: CircuitId.AtomicQuerySigV2,
-    optional: false,
-    query: {
-      allowedIssuers: ["*"],
-      type: "PassportCredential",
-      context: PASSPORT_CONTEXT_URL,
-      credentialSubject: {
-        passportNumber: {
-          $eq: passportNumber,
+function getFinancialAUMRequests(
+  operator: string,
+  currencyCode: string,
+  amount: number
+): ZeroKnowledgeProofRequest[] {
+  return [
+    {
+      id: 6,
+      circuitId: CircuitId.AtomicQuerySigV2,
+      optional: false,
+      query: {
+        allowedIssuers: ["*"],
+        type: "AssetsUnderManagement",
+        context: FIN_ASSETS_CONTEXT_URL,
+        credentialSubject: {
+          currencyCode: {
+            $eq: getNumericCurrencyCode(currencyCode),
+          },
         },
       },
     },
-  };
+    {
+      id: 7,
+      circuitId: CircuitId.AtomicQuerySigV2,
+      optional: false,
+      query: {
+        allowedIssuers: ["*"],
+        type: "AssetsUnderManagement",
+        context: FIN_ASSETS_CONTEXT_URL,
+        credentialSubject: {
+          valuation: {
+            [operator]: amount,
+          },
+        },
+      },
+    },
+  ];
 }
 
-function getPassportCountryNotSanctionedRequest(): ZeroKnowledgeProofRequest {
-  return {
-    id: 4,
-    circuitId: CircuitId.AtomicQuerySigV2,
-    optional: false,
-    query: {
-      allowedIssuers: ["*"],
-      type: "PassportCredential",
-      context: PASSPORT_CONTEXT_URL,
-      credentialSubject: {
-        countryCode: {
-          $nin: sanctionedCountries.map(getNumericCountryCode),
+function getPassportMatchesRequests(): ZeroKnowledgeProofRequest[] {
+  const passportNumber = "L898902C3";
+  return [
+    {
+      id: 3,
+      circuitId: CircuitId.AtomicQuerySigV2,
+      optional: false,
+      query: {
+        allowedIssuers: ["*"],
+        type: "PassportCredential",
+        context: PASSPORT_CONTEXT_URL,
+        credentialSubject: {
+          passportNumber: {
+            $eq: passportNumber,
+          },
         },
       },
     },
-  };
+    {
+      id: 4,
+      circuitId: CircuitId.AtomicQuerySigV2,
+      optional: false,
+      query: {
+        allowedIssuers: ["*"],
+        type: "PassportCredential",
+        context: PASSPORT_CONTEXT_URL,
+        credentialSubject: {
+          countryCode: {
+            $nin: sanctionedCountries.map(getNumericCountryCode),
+          },
+        },
+      },
+    },
+  ];
 }
 
 function getUserIsAdultProofRequest(): ZeroKnowledgeProofRequest {

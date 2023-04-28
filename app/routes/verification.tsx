@@ -3,7 +3,6 @@ import type {
   AuthorizationResponseMessage,
   W3CCredential,
 } from "@0xpolygonid/js-sdk";
-import { ZKPResponse } from "@iden3/js-iden3-auth/dist/types/protocol";
 import type { ActionArgs, LoaderArgs, TypedResponse } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { Form, Link, useActionData, useLoaderData } from "@remix-run/react";
@@ -19,12 +18,9 @@ import { Section } from "~/components/section";
 import { ZKProofDescription } from "~/components/zk-proof";
 import { generateAuthResponse } from "~/service/holder.server";
 import { findMatchingCredentials, getDID } from "~/service/identity.server";
-import {
-  ChallengeType,
-  getAuthRequestMessage,
-  verifyAuthResponse,
-} from "~/service/verifier.server";
+import { getAuthRequestMessage, verifyAuthResponse } from "~/service/verifier.server";
 import { requireUserId } from "~/session.server";
+import { ChallengeType } from "~/shared/challenge-type";
 
 interface VerificationLoaderData {
   holderDID?: string;
@@ -187,13 +183,18 @@ export default function VerificationPage() {
                 defaultValue={actionData?.challengeType}
               >
                 <option>--Select an option--</option>
-                <option value="id:passportNumberMatches">
-                  ID: Passport number matches and country OK
+                <option value={ChallengeType.FIN_AUM_OVER_THRESHOLD}>
+                  FIN: Total assets under management over threshold
                 </option>
-                <option value="kyc:countryNotSanctioned">
+                <option value={ChallengeType.ID_PASSPORT_MATCHES}>
+                  ID: Passport number matches and country is OK
+                </option>
+                <option value={ChallengeType.KYC_COUNTRY_NOT_SANCTIONED}>
                   KYC: Country of residence is not sanctioned
                 </option>
-                <option value="kyc:userIsAdult">KYC: User is an adult (21+ years)</option>
+                <option value={ChallengeType.KYC_USER_IS_ADULT}>
+                  KYC: User is an adult (21+ years)
+                </option>
               </select>
               <input type="hidden" name="verifierDID" value={verifierDID} />
               <button

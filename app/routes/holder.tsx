@@ -16,7 +16,8 @@ import {
   getDID,
 } from "~/service/identity.server";
 import { createIdentity } from "~/service/identity.server";
-import { CredentialType, requestCredential } from "~/service/issuer.server";
+import { requestCredential } from "~/service/issuer.server";
+import { CredentialRequestType } from "~/shared/credential-request-type";
 import { requireUserId } from "~/session.server";
 
 interface HolderLoaderData {
@@ -73,8 +74,8 @@ export const action = async ({ request }: ActionArgs): Promise<TypedResponse<Hol
       if (!values.credentialType) {
         return json({ error: "Select a credential type" });
       }
-      const isSupportedType = Object.values(CredentialType).includes(
-        values.credentialType as CredentialType
+      const isSupportedType = Object.values(CredentialRequestType).includes(
+        values.credentialType as CredentialRequestType
       );
       if (!isSupportedType) {
         return json({ error: "Unsupported credential type" });
@@ -84,7 +85,7 @@ export const action = async ({ request }: ActionArgs): Promise<TypedResponse<Hol
         userId,
         "issuer",
         HOLDER_ALIAS,
-        values.credentialType as CredentialType
+        values.credentialType as CredentialRequestType
       );
       console.log("after action:", await getStats());
       return json({ issuedCredential: credential });
@@ -206,13 +207,16 @@ export default function HolderPage() {
             <Form className="mt-2" method="post">
               <label>Choose credential type: </label>
               <select className="border" name="credentialType">
-                <option value="">--Please select an option--</option>
-                <option value="fin:assetsUnderManagement">
-                  Financial: Assets Under Management
+                <option>--Please select an option--</option>
+                <option value={CredentialRequestType.FIN_AUM_HIGH}>
+                  Financial: Assets Under Management (high)
                 </option>
-                <option value="id:passport">ID: Passport</option>
-                <option value="kyc:age">KYC: Age (date of birth)</option>
-                <option value="kyc:countryOfResidence">KYC: Country of Residence</option>
+                <option value={CredentialRequestType.FIN_AUM_LOW}>
+                  Financial: Assets Under Management (low)
+                </option>
+                <option value={CredentialRequestType.ID_PASSPORT}>ID: Passport</option>
+                <option value={CredentialRequestType.KYC_AGE}>KYC: Age (date of birth)</option>
+                <option value={CredentialRequestType.KYC_COUNTRY_OF_RESIDENCE}>KYC: Country of Residence</option>
               </select>
               <button
                 className={buttonClassName}
