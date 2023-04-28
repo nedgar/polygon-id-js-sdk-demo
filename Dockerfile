@@ -17,8 +17,11 @@ RUN apt-get update && apt-get install -y openssl sqlite3 unzip
 # Download the iden3 circuit files and unzip the ones we need
 FROM base as iden3-circuits
 
+# polygonid-flutter-sdk uses https://circuits.polygonid.me/circuits/v1.0.0/polygonid-keys.zip,
+# but that only has the circuit data and user keys (*.zkey), not the verifier keys.
 ADD https://iden3-circuits-bucket.s3.eu-west-1.amazonaws.com/latest.zip circuits.zip
-RUN unzip circuits.zip "*.json" "*.wasm" "*.zkey" -x "credentialAtomicQueryMTP*" "sybilCredentialAtomic*" -d /circuits && rm circuits.zip
+RUN unzip circuits.zip "*.json" "*.wasm" "*.zkey" -x "credentialAtomicQueryMTP*" "state*" "sybilCredentialAtomic*" -d /circuits
+RUN rm circuits.zip
 
 # Install all node_modules, including dev dependencies
 FROM base as deps
