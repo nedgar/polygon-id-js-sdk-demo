@@ -1,7 +1,8 @@
 import type { W3CCredential } from "@0xpolygonid/js-sdk";
 import type { ActionArgs, LoaderArgs, TypedResponse } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { Form, Link, useLoaderData } from "@remix-run/react";
+import { Form, Link, useLoaderData, useNavigation } from "@remix-run/react";
+import { useEffect, useMemo } from "react";
 import invariant from "tiny-invariant";
 import { CredentialDescription } from "~/components/credential";
 import { Section } from "~/components/section";
@@ -69,13 +70,16 @@ const buttonClassName =
 export default function IssuerPage() {
   const { keyData, authCredential, issuedCredentials } = useLoaderData<typeof loader>();
 
+  const navigation = useNavigation();
+  const formAction = useMemo(() => navigation.formData?.get("_action"), [navigation.formData]);
+
   return (
     <div className="px-4 py-4">
       <h1 className="mb-4 text-2xl font-bold">Polygon ID JS-SDK Demo – Issuer</h1>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Section title="Issuer Key Generation" className="border">
+          <Section title="1: Generate Issuer Key" className="border">
             <Form method="post">
               <p>
                 <label>Private Key in hex: </label>
@@ -85,7 +89,7 @@ export default function IssuerPage() {
                   value="newRandomKey"
                   className={buttonClassName}
                 >
-                  Generate Random Key
+                  {formAction === "newRandomKey" ? "Generating key..." : "Generate Random Key"}
                 </button>
                 <textarea
                   className="w-full rounded border"
@@ -119,7 +123,7 @@ export default function IssuerPage() {
               </p>
             </Form>
           </Section>
-          <Section title="Issuer Identity" className="mt-4 border">
+          <Section title="2: Create Issuer Identity" className="mt-4 border">
             <Form method="post">
               <input type="hidden" name="privateKey" value={keyData?.privateKey.hex ?? ""} />
               <p>
@@ -131,7 +135,9 @@ export default function IssuerPage() {
                   type="submit"
                   value="createIdentity"
                 >
-                  Create Identity for Key
+                  {formAction === "createIdentity"
+                    ? "Creating identity..."
+                    : "Create Identity for Key"}
                 </button>
                 <textarea
                   className="w-full rounded border"
@@ -157,11 +163,11 @@ export default function IssuerPage() {
             className="border"
             title={
               <>
-                Issued Credentials (see{" "}
+                Issued Credentials (
                 <Link className="text-blue-500 underline" to="/holder">
                   Holder
-                </Link>
-                )
+                </Link>{" "}
+                must request)
               </>
             }
           >

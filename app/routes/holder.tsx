@@ -1,7 +1,7 @@
 import type { W3CCredential } from "@0xpolygonid/js-sdk";
 import type { ActionArgs, LoaderArgs, TypedResponse } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { Form, Link, useActionData, useLoaderData } from "@remix-run/react";
+import { Form, Link, useActionData, useLoaderData, useNavigation } from "@remix-run/react";
 import invariant from "tiny-invariant";
 
 import { CredentialDescription } from "~/components/credential";
@@ -19,6 +19,7 @@ import { createIdentity } from "~/service/identity.server";
 import { requestCredential } from "~/service/issuer.server";
 import { CredentialRequestType } from "~/shared/credential-request-type";
 import { requireUserId } from "~/session.server";
+import { useEffect, useMemo } from "react";
 
 interface HolderLoaderData {
   keyData?: KeyData;
@@ -102,10 +103,16 @@ export default function HolderPage() {
   const { keyData, authCredential, issuerDID, subjectCredentials } = useLoaderData<typeof loader>();
 
   const actionData = useActionData<typeof action>();
-
   if (actionData?.error) {
     console.error(`Error: ${actionData.error}`);
   }
+
+  const navigation = useNavigation();
+  const formAction = useMemo(() => navigation.formData?.get("_action"), [navigation.formData]);
+
+  // useEffect(() => {
+  //   console.log("navigation state changed:", navigation, "action:", formAction);
+  // }, [navigation.state]);
 
   return (
     <div className="px-4 py-4">
@@ -113,7 +120,7 @@ export default function HolderPage() {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Section title="Holder Key Generation" className="border">
+          <Section title="1: Generate Holder Key" className="border">
             <Form method="post">
               <p>
                 <label>Private Key in hex: </label>
@@ -123,7 +130,7 @@ export default function HolderPage() {
                   value="newRandomKey"
                   className={buttonClassName}
                 >
-                  Generate Random Key
+                  {formAction === "newRandomKey" ? "Generating key..." : "Generate Random Key"}
                 </button>
                 <textarea
                   className="w-full rounded border"
@@ -157,7 +164,7 @@ export default function HolderPage() {
               </p>
             </Form>
           </Section>
-          <Section title="Holder Identity" className="mt-4 border">
+          <Section title="2: Create Holder Identity" className="mt-4 border">
             <Form method="post">
               <input type="hidden" name="privateKey" value={keyData?.privateKey.hex ?? ""} />
               <p>
@@ -169,15 +176,17 @@ export default function HolderPage() {
                   type="submit"
                   value="createIdentity"
                 >
-                  Create Identity for Key
+                  {formAction === "createIdentity"
+                    ? "Creating identity..."
+                    : "Create Identity for Key"}
                 </button>
-                <textarea
-                  className="w-full rounded border"
-                  readOnly
-                  value={authCredential?.issuer ?? ""}
-                />
               </p>
             </Form>
+            <textarea
+              className="w-full rounded border"
+              readOnly
+              value={authCredential?.issuer ?? ""}
+            />
 
             <div className="mt-2">
               <label>Auth Credential:</label>
@@ -195,7 +204,7 @@ export default function HolderPage() {
           <Section
             title={
               <>
-                Request Credential from{" "}
+                3: Request Credentials from{" "}
                 <Link className="text-blue-500 underline" to="/issuer">
                   Issuer
                 </Link>
@@ -206,7 +215,11 @@ export default function HolderPage() {
             <p>Issuer DID: {issuerDID ?? "---"}</p>
             <Form className="mt-2" method="post">
               <label>Choose credential type: </label>
-              <select className="border" name="credentialType">
+              <select
+                className="border"
+                name="credentialType"
+                disabled={!authCredential || !issuerDID}
+              >
                 <option>--Please select an option--</option>
                 <option value={CredentialRequestType.FIN_AUM_HIGH}>
                   Financial: Assets Under Management (high)
@@ -216,7 +229,9 @@ export default function HolderPage() {
                 </option>
                 <option value={CredentialRequestType.ID_PASSPORT}>ID: Passport</option>
                 <option value={CredentialRequestType.KYC_AGE}>KYC: Age (date of birth)</option>
-                <option value={CredentialRequestType.KYC_COUNTRY_OF_RESIDENCE}>KYC: Country of Residence</option>
+                <option value={CredentialRequestType.KYC_COUNTRY_OF_RESIDENCE}>
+                  KYC: Country of Residence
+                </option>
               </select>
               <button
                 className={buttonClassName}
@@ -225,7 +240,7 @@ export default function HolderPage() {
                 type="submit"
                 value="requestCredential"
               >
-                Request Credential
+                {formAction === "requestCredential" ? "Requesting credential..." : "Request Credential"}
               </button>
             </Form>
           </Section>
@@ -247,7 +262,7 @@ export default function HolderPage() {
               </div>
             ))}
           </Section>
-          <Section title="Verify Credentials" className="mt-4 border">
+          <Section title="4: Verify Credentials" className="mt-4 border">
             Click{" "}
             <Link className="text-blue-500 underline" to="/verification">
               here

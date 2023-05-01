@@ -54,7 +54,8 @@ export function ZKProofDescription({ circuitId, proof }: Props) {
 }
 
 function decodePublicSignals(circuitId: string, pubSignals: string[]): Array<[string, string]> {
-  console.log("decodePublicSignals:", { circuitId, pubSignals });
+  // console.log("decodePublicSignals:", { circuitId, pubSignals });
+
   if (circuitId === "authV2") {
     const obj = {
       "user ID": pubSignals[0],
@@ -63,6 +64,7 @@ function decodePublicSignals(circuitId: string, pubSignals: string[]): Array<[st
     };
     return Object.entries(obj).map(([key, val]) => [`  ${key}`, `${val}`]);
   }
+
   if (circuitId === "credentialAtomicQuerySigV2") {
     let idx = 0,
       op;
@@ -84,5 +86,6 @@ function decodePublicSignals(circuitId: string, pubSignals: string[]): Array<[st
     };
     return Object.entries(obj).map(([key, val]) => [`  ${key}`, `${val}`]);
   }
+
   return pubSignals.map((val, i) => [`  ${i}`, val]);
 }

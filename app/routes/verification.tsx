@@ -5,8 +5,8 @@ import type {
 } from "@0xpolygonid/js-sdk";
 import type { ActionArgs, LoaderArgs, TypedResponse } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { Form, Link, useActionData, useLoaderData } from "@remix-run/react";
-import { Fragment } from "react";
+import { Form, Link, useActionData, useLoaderData, useNavigation } from "@remix-run/react";
+import { Fragment, useMemo } from "react";
 import QRCode from "react-qr-code";
 import invariant from "tiny-invariant";
 
@@ -155,10 +155,13 @@ export default function VerificationPage() {
   const { holderDID, verifierDID } = useLoaderData<typeof loader>();
 
   const actionData = useActionData<typeof action>();
-  console.log("action data:", actionData);
+  // console.log("action data:", actionData);
   if (actionData?.error) {
     console.error(`Error: ${actionData.error}`);
   }
+
+  const navigation = useNavigation();
+  const formAction = navigation.formData?.get("_action");
 
   const zkpResponses = actionData?.authResponse?.body?.scope ?? [];
 
@@ -207,7 +210,9 @@ export default function VerificationPage() {
                 type="submit"
                 value="presentChallenge"
               >
-                Present Auth Request
+                {formAction === "presentChallenge"
+                  ? "Presenting auth request..."
+                  : "Present Auth Request"}
               </button>
             </Form>
             {actionData?.authRequest && (
@@ -268,7 +273,7 @@ export default function VerificationPage() {
                 type="submit"
                 value="scanChallengeQR"
               >
-                Scan QR Code
+                {formAction === "scanChallengeQR" ? "Scanning QR code..." : "Scan QR Code"}
               </button>
             </Form>
           </Section>
@@ -306,7 +311,9 @@ export default function VerificationPage() {
                       type="submit"
                       value="generateProof"
                     >
-                      Generate Proof
+                      {formAction === "generateProof"
+                        ? "Generating proof (this can take a while)..."
+                        : "Generate Proof"}
                     </button>
                     {holderDID && <input type="hidden" name="holderDID" value={holderDID} />}
                     {actionData?.authRequest && (
@@ -378,7 +385,9 @@ export default function VerificationPage() {
                     type="submit"
                     value="handleAuthResponse"
                   >
-                    Send Response
+                    {formAction === "handleAuthResponse"
+                      ? "Sending response..."
+                      : "Send Response as JWZ"}
                   </button>
                 </Form>
               </>
