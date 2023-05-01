@@ -3,6 +3,7 @@ import {
   BjjProvider,
   core,
   CredentialRequest,
+  CredentialStatusType,
   CredentialStorage,
   CredentialWallet,
   defaultEthConnectionConfig,
@@ -172,11 +173,14 @@ export async function createIdentity(userId: string, alias: string) {
   if (!idData) {
     throw new Error("Unknown user ID or alias");
   }
-  const { did, credential } = await identityWallet.createIdentity(HOST_URL, {
+  const { did, credential } = await identityWallet.createIdentity({
     method: core.DidMethod.PolygonId,
     blockchain: core.Blockchain.Polygon,
     networkId: core.NetworkId.Mumbai,
-    rhsUrl,
+    revocationOpts: {
+      baseUrl: rhsUrl,
+      type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof
+    },
     seed: idData.seed,
   });
   idData.did = did;
@@ -214,18 +218,6 @@ export async function getSubjectCredentials(userId: string, alias: string) {
   } else {
     return [];
   }
-}
-
-export async function issueCredential(userId: string, issuerAlias: string, req: CredentialRequest) {
-  const issuerDID = getIdentityData(userId, issuerAlias)?.did;
-  invariant(issuerDID, "missing issuer DID");
-
-  const credential = await identityWallet.issueCredential(issuerDID, req, HOST_URL, {
-    withRHS: rhsUrl,
-  });
-  await credentialWallet.save(credential);
-
-  return credential;
 }
 
 export async function findMatchingCredentials(

@@ -1,10 +1,12 @@
-import { CredentialRequest } from "@0xpolygonid/js-sdk";
+import { CredentialRequest, CredentialStatusType } from "@0xpolygonid/js-sdk";
 import { DID } from "@iden3/js-iden3-core";
 import invariant from "tiny-invariant";
 
-import { getNumericCountryCode } from "./countries.server";
-import { getDID, issueCredential } from "./identity.server";
+import config from "~/config.server";
 import { CredentialRequestType } from "~/shared/credential-request-type";
+
+import { getNumericCountryCode } from "./countries.server";
+import { credentialWallet, getDID, identityWallet } from "./identity.server";
 import { getNumericCurrencyCode } from "./currencies.server";
 
 export async function requestCredential(
@@ -23,7 +25,7 @@ export async function requestCredential(
   return await issueCredential(userId, issuerAlias, req);
 }
 
-function getCredentialRequest(subjectDID: DID, type: CredentialRequestType): CredentialRequest {
+function getCredentialRequest(subjectDID: DID, type: CredentialRequestType) {
   switch (type) {
     case CredentialRequestType.FIN_AUM_HIGH:
       return getFinancialAUMRequest(subjectDID, "SGD", 234567);
@@ -44,7 +46,7 @@ function getFinancialAUMRequest(
   subjectDID: DID,
   currencyCode: string,
   valuation: number
-): CredentialRequest {
+): Partial<CredentialRequest> {
   invariant(valuation >= 0 && valuation % 1 === 0, "valuation must be a non-negative integer");
   return {
     credentialSchema:
@@ -59,7 +61,7 @@ function getFinancialAUMRequest(
   };
 }
 
-function getKYCAgeRequest(subjectDID: DID): CredentialRequest {
+function getKYCAgeRequest(subjectDID: DID): Partial<CredentialRequest> {
   return {
     credentialSchema:
       "https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v3.json",
@@ -73,7 +75,7 @@ function getKYCAgeRequest(subjectDID: DID): CredentialRequest {
   };
 }
 
-function getKYCCountryOfResidenceRequest(subjectDID: DID): CredentialRequest {
+function getKYCCountryOfResidenceRequest(subjectDID: DID): Partial<CredentialRequest> {
   return {
     credentialSchema:
       "https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCCountryOfResidenceCredential-v2.json",
@@ -87,7 +89,7 @@ function getKYCCountryOfResidenceRequest(subjectDID: DID): CredentialRequest {
   };
 }
 
-function getPassportRequest(subjectDID: DID): CredentialRequest {
+function getPassportRequest(subjectDID: DID): Partial<CredentialRequest> {
   // Example from Figure 1 at https://www.icao.int/publications/documents/9303_p3_cons_en.pdf
   return {
     credentialSchema:
@@ -101,6 +103,22 @@ function getPassportRequest(subjectDID: DID): CredentialRequest {
     },
     expiration: toSeconds(new Date("2030-01-01T00:00:00Z")),
   };
+}
+
+export async function issueCredential(userId: string, issuerAlias: string, req: Partial<CredentialRequest>) {
+  const issuerDID = getDID(userId, issuerAlias);
+  invariant(issuerDID, "missing issuer DID");
+
+  const credential = await identityWallet.issueCredential(issuerDID, {
+    ...req,
+    revocationOpts: {
+      baseUrl: config.rhsUrl,
+      type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof
+    }
+  } as CredentialRequest);
+  await credentialWallet.save(credential);
+
+  return credential;
 }
 
 function toSeconds(date: Date) {

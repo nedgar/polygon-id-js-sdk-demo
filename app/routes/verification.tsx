@@ -184,16 +184,19 @@ export default function VerificationPage() {
               >
                 <option>--Select an option--</option>
                 <option value={ChallengeType.FIN_AUM_OVER_THRESHOLD}>
-                  FIN: Total assets under management over threshold
+                  FIN: Total assets under management over threshold (2 ZKPs)
                 </option>
                 <option value={ChallengeType.ID_PASSPORT_MATCHES}>
-                  ID: Passport number matches and country is OK
+                  ID: Passport number matches and country is OK (2 ZKPs)
                 </option>
                 <option value={ChallengeType.KYC_COUNTRY_NOT_SANCTIONED}>
-                  KYC: Country of residence is not sanctioned
+                  KYC: Country of residence is not sanctioned (1 ZKP)
+                </option>
+                <option value={ChallengeType.KYC_DISCLOSE_BIRTHDAY}>
+                  KYC: Disclose birthday (1 ZKP + VP)
                 </option>
                 <option value={ChallengeType.KYC_USER_IS_ADULT}>
-                  KYC: User is an adult (21+ years)
+                  KYC: User is an adult, at least 21 years old (1 ZKP)
                 </option>
               </select>
               <input type="hidden" name="verifierDID" value={verifierDID} />

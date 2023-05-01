@@ -22,9 +22,15 @@ interface Props {
 
 export function ZKProofDescription({ circuitId, proof }: Props) {
   const header: Array<[string, any] | undefined> = [];
-  proof.id && header.push(["Request ID", proof.id]);
-  proof.circuitId && header.push(["Circuit ID", proof.circuitId]),
-  header.length > 0 && header.push(undefined);
+  if (proof.id) {
+    header.push(["Request ID", proof.id]);
+  }
+  if (proof.circuitId) {
+    header.push(["Circuit ID", proof.circuitId]);
+  }
+  if (header.length > 0) {
+    header.push(undefined);
+  }
 
   const entries: Array<[string, any] | undefined> = [
     ...header,
@@ -34,6 +40,15 @@ export function ZKProofDescription({ circuitId, proof }: Props) {
     ["Public signals", ""],
     ...decodePublicSignals(circuitId ?? proof.circuitId, proof.pub_signals),
   ];
+
+  const vc = (proof.vp as any)?.verifiableCredential;
+  if (vc) {
+    entries.push(undefined);
+    entries.push(["Verifiable Presentation, subject details", ""]);
+    Object.entries(vc.credentialSubject ?? []).forEach(([key, val]) => {
+      entries.push([`  ${key}`, val]);
+    });
+  }
 
   return <ObjectGrid entries={entries} />;
 }

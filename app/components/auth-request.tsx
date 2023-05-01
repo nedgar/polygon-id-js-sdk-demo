@@ -1,5 +1,6 @@
 import type { AuthorizationRequestMessage, JSONObject } from "@0xpolygonid/js-sdk";
 import { ObjectGrid } from "./object-grid";
+import { Fragment } from "react";
 
 interface Props {
   message: AuthorizationRequestMessage;
@@ -38,7 +39,7 @@ export function AuthRequestDescription({ message }: Props) {
     <>
       <ObjectGrid obj={msgObj} />
       {zkpRequests.map((req, i) => (
-        <>
+        <Fragment key={i}>
           <br />
           <p>ZK Proof request{isMulti ? ` ${i + 1}` : ""}:</p>
           <div className="ml-2">
@@ -52,7 +53,7 @@ export function AuthRequestDescription({ message }: Props) {
               }}
             />
           </div>
-        </>
+        </Fragment>
       ))}
     </>
   );
@@ -74,12 +75,15 @@ function formatQuerySubject(query?: JSONObject) {
   }
 
   return Object.entries(s)
-    .map(([field, comparison]) =>
-      Object.entries(comparison)
-        .map(([op, val]) => `${field} ${OPS[op] ?? op} ${JSON.stringify(val)}`)
-        .join(" AND ")
-    )
+    .map(([field, comparison]) => {
+      const entries = Object.entries(comparison);
+      if (entries.length === 0) {
+        return `${field} (selective disclosure)`;
+      } else {
+        return Object.entries(comparison)
+          .map(([op, val]) => `${field} ${OPS[op] ?? op} ${JSON.stringify(val)}`)
+          .join(" AND ");
+      }
+    })
     .join("\n AND ");
-
-  // return JSON.stringify(query.credentialSubject);
 }

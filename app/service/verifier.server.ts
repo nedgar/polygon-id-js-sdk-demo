@@ -46,6 +46,12 @@ export function getAuthRequestMessage(verifierDID: string, challengeType: Challe
         "Verify country of residence is not sanctioned.",
         getCountryNotSanctionedProofRequest()
       );
+    case ChallengeType.KYC_DISCLOSE_BIRTHDAY:
+      return getAuthRequest(
+        verifierDID,
+        "Disclose birthday (selective disclosure).",
+        getDiscloseBirthdayRequest()
+      );
     case ChallengeType.KYC_USER_IS_ADULT:
       return getAuthRequest(
         verifierDID,
@@ -158,10 +164,32 @@ function getPassportMatchesRequests(): ZeroKnowledgeProofRequest[] {
   ];
 }
 
+function getDiscloseBirthdayRequest(): ZeroKnowledgeProofRequest {
+  return {
+    id: 1,
+    circuitId: CircuitId.AtomicQuerySigV2,
+    optional: false,
+    query: {
+      allowedIssuers: ["*"],
+      type: "KYCAgeCredential",
+      context: KYC_CONTEXT_URL,
+      credentialSubject: {
+        birthday: {},
+      },
+    },
+  };
+}
+
 function getUserIsAdultProofRequest(): ZeroKnowledgeProofRequest {
   const now = new Date();
+
+  // Subtract 21 years and add one day (if today is their birthday, it counts).
+  // This does increment month if needed.
+  // Caveat: should really use user's local time, not UTC.
+  const dt = new Date(now.getUTCFullYear() - 21, now.getUTCMonth(), now.getUTCDay() + 1);
+
   const comparisonDateAsNumber =
-    (now.getUTCFullYear() - 21) * 10000 + (now.getUTCMonth() + 1) * 100 + now.getUTCDate();
+    (dt.getUTCFullYear()) * 10000 + (dt.getUTCMonth() + 1) * 100 + dt.getUTCDate();
   return {
     id: 1,
     circuitId: CircuitId.AtomicQuerySigV2,
