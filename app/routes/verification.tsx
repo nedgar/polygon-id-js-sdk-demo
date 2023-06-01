@@ -280,7 +280,6 @@ export default function VerificationPage() {
               <select
                 className="border"
                 name="challengeType"
-                value={actionData?.challengeType}
                 required
               >
                 <option value="" aria-required="false">
