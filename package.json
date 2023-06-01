@@ -39,6 +39,7 @@
     "@remix-run/server-runtime": "^1.14.3",
     "bcryptjs": "^2.4.3",
     "currency-codes": "^2.1.0",
+    "ethers": "^6.3.0",
     "i18n-iso-countries": "^7.5.0",
     "isbot": "^3.6.7",
     "marked": "^4.3.0",
