@@ -11,28 +11,27 @@ const OPS: JSONObject = {
   $nin: "NOT IN",
 };
 
-export function formatField(field: string, val: any): string {
+export function getFieldFormatter(field: string) {
   switch (field) {
     case "countryCode":
-      return getAlpha3CountryCode(val);
+      return getAlpha3CountryCode;
     case "currencyCode":
-      return getAlphaCurrencyCode(val);
+      return getAlphaCurrencyCode;
     default:
-      return String(val);
+      return null;
   }
 }
 
 function formatQuery(field: string, op: string, val: any): string {
   const opText = OPS[op] ?? op;
-  const arr = Array.isArray(val) ? val : [val];
-  let texts;
-  switch (field) {
-    case "countryCode":
-    case "currencyCode":
-      texts = arr.map((v) => formatField(field, v));
-  }
-  const text = texts ? "(" + texts.join(", ") + ")" : "";
-  return `${field} ${opText} ${JSON.stringify(val)} ${text}`;
+
+  const fmt = getFieldFormatter(field);
+  const values = Array.isArray(val) ? val : [val];
+  const formatted = fmt && values.map(fmt);
+
+  return `${field} ${opText} ${JSON.stringify(val)}${
+    formatted ? " (" + formatted.join(", ") + ")" : ""
+  }`;
 }
 
 export function formatQuerySubject(query?: JSONObject) {

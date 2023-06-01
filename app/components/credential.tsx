@@ -1,5 +1,6 @@
 import type { W3CCredential } from "@0xpolygonid/js-sdk";
 import { ObjectGrid, NBSP } from "./object-grid";
+import { getFieldFormatter } from "~/shared/formatting";
 
 interface Props {
   cred: W3CCredential;
@@ -16,7 +17,7 @@ export function CredentialDescription({ cred }: Props) {
     ["Subject DID", subjectId ?? "(self)"],
     undefined,
     ["Properties", ""],
-    ...Object.entries(subjectRest).map(([k, v]): [string, any] => [`  ${k}`, v]),
+    ...Object.entries(subjectRest).map(([f, v]) => [`  ${f}`, formatField(f, v)] as [string, any]),
     undefined,
     ["Issued at", formatDate(cred.issuanceDate)],
     ["Expires at", formatDate(cred.expirationDate)],
@@ -28,4 +29,9 @@ export function CredentialDescription({ cred }: Props) {
 
 function formatDate(dateStr?: string) {
   return dateStr ? new Date(dateStr).toUTCString() : "---";
+}
+
+function formatField(field: string, val: any) {
+  const fmt = getFieldFormatter(field);
+  return fmt ? `${val} (${fmt(val)})` : `${val}`;
 }
