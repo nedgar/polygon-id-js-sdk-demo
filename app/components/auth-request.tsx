@@ -37,6 +37,7 @@ export function AuthRequestDescription({ message }: Props) {
                 "Request ID": req.id,
                 "Circuit ID": req.circuitId,
                 "Allowed issuers": ((req.query?.allowedIssuers as string[]) ?? []).join(", "),
+                "Context URL": req.query.context ?? "---",
                 "Credential type": req.query?.type,
                 Query: formatQuerySubject(req.query),
               }}
