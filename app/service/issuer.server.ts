@@ -3,11 +3,11 @@ import { DID } from "@iden3/js-iden3-core";
 import invariant from "tiny-invariant";
 
 import config from "~/config.server";
+import { getNumericCountryCode } from "~/shared/countries";
 import { CredentialRequestType } from "~/shared/credential-request-type";
+import { getNumericCurrencyCode } from "~/shared/currencies";
 
-import { getNumericCountryCode } from "./countries.server";
 import { credentialWallet, getDID, identityWallet } from "./identity.server";
-import { getNumericCurrencyCode } from "./currencies.server";
 
 export async function requestCredential(
   userId: string,

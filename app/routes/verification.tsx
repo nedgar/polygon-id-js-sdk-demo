@@ -3,10 +3,11 @@ import type {
   AuthorizationResponseMessage,
   W3CCredential,
 } from "@0xpolygonid/js-sdk";
+import { ethers, AlchemyProvider } from "ethers";
 import type { ActionArgs, LoaderArgs, TypedResponse } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { Form, Link, useActionData, useLoaderData, useNavigation } from "@remix-run/react";
-import { Fragment, useMemo } from "react";
+import { Fragment, useEffect, useMemo } from "react";
 import QRCode from "react-qr-code";
 import invariant from "tiny-invariant";
 
@@ -18,13 +19,19 @@ import { Section } from "~/components/section";
 import { ZKProofDescription } from "~/components/zk-proof";
 import { generateAuthResponse } from "~/service/holder.server";
 import { findMatchingCredentials, getDID } from "~/service/identity.server";
-import { getAuthRequestMessage, verifyAuthResponse } from "~/service/verifier.server";
+import {
+  VerifyAuthResponseResult,
+  getAuthRequestMessage,
+  verifyAuthResponse,
+} from "~/service/verifier.server";
 import { requireUserId } from "~/session.server";
 import { ChallengeType } from "~/shared/challenge-type";
+import { UserTokenStatus, getUserTokenStatus, tokenContract } from "~/service/blockchain.server";
 
 interface VerificationLoaderData {
   holderDID?: string;
   verifierDID?: string;
+  verifyAuthResponseResult?: VerifyAuthResponseResult;
 }
 
 interface VerificationActionData {
@@ -35,7 +42,8 @@ interface VerificationActionData {
   authResponse?: AuthorizationResponseMessage;
   token?: string;
   tokenDecoded?: any;
-  isResponseProofValid?: boolean;
+  verifyAuthResponseResult?: VerifyAuthResponseResult;
+  userTokenStatus?: UserTokenStatus;
   error?: string;
 }
 
@@ -51,6 +59,14 @@ export const loader = async ({
   return json({
     holderDID: getDID(userId, "holder")?.toString(),
     verifierDID: VERIFIER_DID.toString(),
+    // verifyAuthResponseResult: {
+    //   checks: {
+    //     tokenSyntax: true,
+    //     mediaTypeOk: false,
+    //     requestExists: undefined,
+    //   },
+    //   errors: [],
+    // },
   });
 };
 
@@ -107,9 +123,11 @@ export const action = async ({
     console.log("authToken:", authToken);
     invariant(typeof authToken === "string", "missing auth token");
 
+    const result = await verifyAuthResponse(authToken);
+
     return {
       token: authToken,
-      isResponseProofValid: await verifyAuthResponse(authToken),
+      verifyAuthResponseResult: result,
     };
   }
 
@@ -137,28 +155,107 @@ export const action = async ({
       case "handleAuthResponse":
         data = await handleAuthResponse(values.authToken as string);
         break;
+      case "checkProofStatus":
+        data = {
+          userTokenStatus: await getUserTokenStatus(values.address as string),
+        };
+        break;
       default: {
         invariant(false, `Unexpected action: ${_action}`);
       }
     }
     console.log(`response data for action ${_action}:`, JSON.stringify(data, null, 2));
     return json(data);
+  } catch (err) {
+    console.error("Error in action processing:", err);
+    return json({
+      error: String(err),
+    });
   } finally {
     console.log(`${_action} action took ${Date.now() - t} ms`);
   }
 };
 
 const buttonClassName =
-  "rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-600 focus:bg-blue-400 disabled:bg-blue-300 mb-1 ml-2";
+  "rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-600 focus:bg-blue-400 disabled:bg-blue-300";
+
+function AuthResponseVerification({ result }: { result: VerifyAuthResponseResult }) {
+  const symbol = (val?: boolean) => (val ? "✅" : val === false ? "❌" : "❓");
+  const { checks = {}, errors = [] } = result;
+
+  return (
+    <>
+      <div>
+        {errors.length === 0 ? "✅ Everything checks out!" : "❌ One or more checks failed."}
+      </div>
+      <div className="mt-2">
+        <p>Checks:</p>
+        <ul className="ml-4 list-inside list-disc">
+          <li>token syntax: {symbol(checks.tokenSyntax)}</li>
+          <li>media type is iden3 ZKP: {symbol(checks.mediaType)}</li>
+          <li>has matching request: {symbol(checks.requestExists)}</li>
+          <li>auth query satisfied: {symbol(checks.authVerified)}</li>
+        </ul>
+      </div>
+      <div className="mt-2">
+        Errors:{" "}
+        {errors.length === 0 ? (
+          "none"
+        ) : (
+          <ol className="ml-4 list-inside list-decimal">
+            {errors.map((err, i) => (
+              <li key={i}>{err}</li>
+            ))}
+          </ol>
+        )}
+      </div>
+    </>
+  );
+}
+
+function OnChainStatus({ userTokenStatus }: { userTokenStatus?: UserTokenStatus }) {
+  return (
+    <Form method="post">
+      <label>Address:</label>{" "}
+      <input
+        type="text"
+        className="rounded border"
+        defaultValue="0x59c8c433344a65dD22fBDe54Cfa5d440954512Fa"
+        name="address"
+        pattern="0x[0-9A-Fa-f]{40}"
+        required
+        size={50}
+      />
+      <input type="hidden" name="requestId" value={1} />
+      <br />
+      <button
+        className={buttonClassName + " mt-2"}
+        name="_action"
+        type="submit"
+        value="checkProofStatus"
+      >
+        Check Proof Status
+      </button>
+      {userTokenStatus && (
+        <div className="mt-2">
+          {/* <p>Address: {userTokenStatus.address}</p> */}
+          <p>Request IDs with proof: {userTokenStatus.requestsWithProof.join(", ") || "<none>"}</p>
+          <p>Assigned roles: {userTokenStatus.roles.join(", ") || "<none>"}</p>
+        </div>
+      )}
+    </Form>
+  );
+}
 
 export default function VerificationPage() {
-  const { holderDID, verifierDID } = useLoaderData<typeof loader>();
+  const { holderDID, verifierDID, verifyAuthResponseResult } = useLoaderData<typeof loader>();
 
   const actionData = useActionData<typeof action>();
-  // console.log("action data:", actionData);
-  if (actionData?.error) {
-    console.error(`Error: ${actionData.error}`);
-  }
+  useEffect(() => {
+    if (actionData?.error) {
+      console.error(`Error in action data: ${actionData.error}`);
+    }
+  }, [actionData]);
 
   const navigation = useNavigation();
   const formAction = navigation.formData?.get("_action");
@@ -177,15 +274,18 @@ export default function VerificationPage() {
               <textarea className="w-full rounded border" readOnly value={verifierDID} />
             </p>
           </Section>
-          <Section title="1: Verifier Presents Authorization Request" className=" mt-4 border">
+          <Section title="1: Verifier Presents Authorization Request" className="mt-4 border">
             <Form className="mt-2" method="post">
               <label>Choose request type: </label>
               <select
                 className="border"
                 name="challengeType"
-                defaultValue={actionData?.challengeType}
+                value={actionData?.challengeType}
+                required
               >
-                <option>--Select an option--</option>
+                <option value="" aria-required="false">
+                  --Select an option--
+                </option>
                 <option value={ChallengeType.FIN_AUM_OVER_THRESHOLD}>
                   FIN: Total assets under management over threshold (2 ZKPs)
                 </option>
@@ -203,8 +303,9 @@ export default function VerificationPage() {
                 </option>
               </select>
               <input type="hidden" name="verifierDID" value={verifierDID} />
+              <br />
               <button
-                className={buttonClassName}
+                className={buttonClassName + " mt-2"}
                 disabled={!verifierDID}
                 name="_action"
                 type="submit"
@@ -229,13 +330,8 @@ export default function VerificationPage() {
             )}
           </Section>
           <Section title="5: Verifier Receives JWZ and Verifies Proof" className="mt-4 border">
-            {typeof actionData?.isResponseProofValid !== "undefined" && (
-              <div className="mt-4">
-                <p>
-                  Proof is valid:{" "}
-                  {actionData.isResponseProofValid ? "Hooray! yes it is" : "Oops, no"}
-                </p>
-              </div>
+            {actionData?.verifyAuthResponseResult && (
+              <AuthResponseVerification result={actionData.verifyAuthResponseResult} />
             )}
           </Section>
         </div>
@@ -305,7 +401,7 @@ export default function VerificationPage() {
                       </div>
                     ))}
                     <button
-                      className={`${buttonClassName} mt-4`}
+                      className={buttonClassName + " mt-4"}
                       disabled={!holderDID || !actionData?.authRequest}
                       name="_action"
                       type="submit"
@@ -355,7 +451,7 @@ export default function VerificationPage() {
             )}
           </Section>
           <Section title="4: Holder Sends Response as JWZ Token" className="mt-4 border">
-            {actionData?.authResponse && actionData?.tokenDecoded && (
+            {actionData?.token && actionData?.tokenDecoded && (
               <>
                 <p>
                   A JWZ token is a kind of JWT (JSON Web Token) containing three parts, in base-64
@@ -370,13 +466,12 @@ export default function VerificationPage() {
                 <p>JWZ payload: (see Auth Response message above)</p>
                 <br />
                 <p>JWZ proof:</p>
-                <div className="border">
+                <div className="mb-4 border">
                   <ZKProofDescription
                     circuitId={actionData.tokenDecoded.headers?.circuitId}
                     proof={actionData.tokenDecoded.zkProof}
                   />
                 </div>
-                <br />
                 <Form method="post">
                   <input type="hidden" name="authToken" value={actionData.token} />
                   <button
@@ -393,6 +488,9 @@ export default function VerificationPage() {
               </>
             )}
           </Section>
+          {/* <Section title="On-Chain Status" className="mt-4 border">
+            <OnChainStatus userTokenStatus={actionData?.userTokenStatus} />
+          </Section> */}
         </div>
       </div>
     </div>

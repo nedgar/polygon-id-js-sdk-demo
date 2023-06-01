@@ -8,16 +8,15 @@ import {
 } from "@0xpolygonid/js-sdk";
 import { randomUUID } from "crypto";
 import { Alpha2Code } from "i18n-iso-countries";
-import invariant from "tiny-invariant";
 
 import { ChallengeType } from "~/shared/challenge-type";
+import { getNumericCountryCode } from "~/shared/countries";
+import { getNumericCurrencyCode } from "~/shared/currencies";
 
-import { getNumericCountryCode } from "./countries.server";
 import { credentialWallet, dataStorage, identityWallet } from "./identity.server";
 import { initServices } from "./services.server";
 import config from "~/config.server";
 import { getCircuitStorage } from "./circuits.server";
-import { getNumericCurrencyCode } from "./currencies.server";
 
 const FIN_ASSETS_CONTEXT_URL =
   "https://raw.githubusercontent.com/nedgar/polygon-id-js-sdk-demo/main/schemas/json-ld/AssetsUnderManagement-v1.json-ld";
@@ -74,7 +73,7 @@ const sanctionedCountries: Alpha2Code[] = [
 function getCountryNotSanctionedProofRequest(): ZeroKnowledgeProofRequest {
   return {
     id: 2,
-    circuitId: CircuitId.AtomicQuerySigV2,
+    circuitId: CircuitId.AtomicQuerySigV2, // "credentialAtomicQuerySigV2OnChain"
     optional: false,
     query: {
       allowedIssuers: ["*"],
@@ -166,7 +165,7 @@ function getPassportMatchesRequests(): ZeroKnowledgeProofRequest[] {
 
 function getDiscloseBirthdayRequest(): ZeroKnowledgeProofRequest {
   return {
-    id: 1,
+    id: 101,
     circuitId: CircuitId.AtomicQuerySigV2,
     optional: false,
     query: {
@@ -186,10 +185,10 @@ function getUserIsAdultProofRequest(): ZeroKnowledgeProofRequest {
   // Subtract 21 years and add one day (if today is their birthday, it counts).
   // This does increment month if needed.
   // Caveat: should really use user's local time, not UTC.
-  const dt = new Date(now.getUTCFullYear() - 21, now.getUTCMonth(), now.getUTCDay() + 1);
+  const dt = new Date(now.getUTCFullYear() - 21, now.getUTCMonth(), now.getUTCDate() + 1);
 
   const comparisonDateAsNumber =
-    (dt.getUTCFullYear()) * 10000 + (dt.getUTCMonth() + 1) * 100 + dt.getUTCDate();
+    dt.getUTCFullYear() * 10000 + (dt.getUTCMonth() + 1) * 100 + dt.getUTCDate();
   return {
     id: 1,
     circuitId: CircuitId.AtomicQuerySigV2,
@@ -264,7 +263,19 @@ async function getAuthVerifier() {
   return new auth.Verifier(verificationKeyloader, schemaLoader, resolvers);
 }
 
-export async function verifyAuthResponse(authToken: string): Promise<boolean> {
+export type VerifyAuthResponseChecks = {
+  tokenSyntax?: boolean;
+  mediaType?: boolean;
+  requestExists?: boolean;
+  authVerified?: boolean;
+}
+
+export type VerifyAuthResponseResult = {
+  checks: VerifyAuthResponseChecks;
+  errors: string[];
+}
+
+export async function verifyAuthResponse(authToken: string): Promise<VerifyAuthResponseResult> {
   // TODO: check that the received response is actually in response to an earlier request that was sent
 
   const { packageManager } = await initServices(
@@ -273,20 +284,42 @@ export async function verifyAuthResponse(authToken: string): Promise<boolean> {
     dataStorage.states
   );
 
-  const envelope = new TextEncoder().encode(authToken);
-  const { unpackedMediaType, unpackedMessage } = await packageManager.unpack(envelope);
-  console.log("unpacked:", { unpackedMediaType, unpackedMessage });
+  const checks: VerifyAuthResponseChecks = {};
+  const errors: string[] = [];
 
-  invariant(unpackedMessage.thid, "missing thread ID");
+  try {
+    const envelope = new TextEncoder().encode(authToken);
+    checks.tokenSyntax = false;
+    const { unpackedMediaType, unpackedMessage } = await packageManager.unpack(envelope);
+    checks.tokenSyntax = true;
 
-  const authRequest = authRequests.get(unpackedMessage.thid);
-  invariant(authRequest, "no auth request found for thread ID");
+    checks.mediaType = unpackedMediaType === PROTOCOL_CONSTANTS.MediaType.ZKPMessage;
+    if (!checks.mediaType) {
+      throw new Error(`Unexpected media type: ${unpackedMediaType}`);
+    }
 
-  const verifier = await getAuthVerifier();
-  await verifier.verifyAuthResponse(
-    unpackedMessage as protocol.AuthorizationResponseMessage,
-    authRequest as protocol.AuthorizationRequestMessage
-  );
+    // console.log("unpacked:", { unpackedMediaType, unpackedMessage });
 
-  return true;
+    if (!unpackedMessage.thid) {
+      throw new Error("Missing thread ID");
+    }
+
+    const authRequest = authRequests.get(unpackedMessage.thid);
+    checks.requestExists = !!authRequest;
+    if (!authRequest) {
+      throw Error("No auth request found for thread ID");
+    }
+
+    const verifier = await getAuthVerifier();
+    checks.authVerified = false;
+    await verifier.verifyAuthResponse(
+      unpackedMessage as protocol.AuthorizationResponseMessage,
+      authRequest as protocol.AuthorizationRequestMessage
+    );
+    checks.authVerified = true;
+  } catch (err: any) {
+    console.error("Error in verifyAuthResponse:", err);
+    errors.push(err?.message ?? "Unknown error in verifyAuthResponse");
+  }
+  return { checks, errors };
 }
