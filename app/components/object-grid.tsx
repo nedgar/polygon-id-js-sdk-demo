@@ -22,8 +22,8 @@ export function ObjectGrid({ obj = {}, entries }: Props) {
             </>
           ) : (
             <>
-              <div className="mt-1"></div>
-              <div className="mt-1"></div>
+              <div className="mt-2"></div>
+              <div className="mt-2"></div>
             </>
           )}
         </Fragment>
