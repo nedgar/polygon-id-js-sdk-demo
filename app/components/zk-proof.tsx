@@ -1,4 +1,7 @@
 import type { ZeroKnowledgeProofResponse } from "@0xpolygonid/js-sdk";
+
+import { formatId, toHex } from "~/shared/formatting";
+
 import { ObjectGrid } from "./object-grid";
 
 enum Operator {
@@ -54,13 +57,13 @@ export function ZKProofDescription({ circuitId, proof }: Props) {
 }
 
 function decodePublicSignals(circuitId: string, pubSignals: string[]): Array<[string, string]> {
-  // console.log("decodePublicSignals:", { circuitId, pubSignals });
+  console.log("decodePublicSignals:", { circuitId, pubSignals });
 
   if (circuitId === "authV2") {
     const obj = {
-      "user ID": pubSignals[0],
-      "challenge (hash)": pubSignals[1],
-      "GIST root": pubSignals[2],
+      "user ID": formatId(pubSignals[0]),
+      "challenge (hash)": toHex(pubSignals[1]),
+      "GIST root": toHex(pubSignals[2]),
     };
     return Object.entries(obj).map(([key, val]) => [`  ${key}`, `${val}`]);
   }
@@ -70,16 +73,16 @@ function decodePublicSignals(circuitId: string, pubSignals: string[]): Array<[st
       op;
     const obj = {
       merklized: pubSignals[idx++],
-      "user ID": pubSignals[idx++],
-      "issuer auth state": pubSignals[idx++],
+      "user ID": formatId(pubSignals[idx++]),
+      "issuer auth state": toHex(pubSignals[idx++]),
       "request ID": pubSignals[idx++],
-      "issuer ID": pubSignals[idx++],
+      "issuer ID": formatId(pubSignals[idx++]),
       "is revocation checked": pubSignals[idx++],
-      "issuer claim non-rev state": pubSignals[idx++],
+      "issuer claim non-rev state": toHex(pubSignals[idx++]),
       timestamp: new Date(Number(pubSignals[idx++]) * 1000).toUTCString(),
-      "claim schema hash": pubSignals[idx++],
+      "claim schema hash": toHex(pubSignals[idx++]),
       "claim path not exists": pubSignals[idx++],
-      "claim path key": pubSignals[idx++],
+      "claim path key": toHex(pubSignals[idx++]),
       "slot index": pubSignals[idx++],
       operator: `${(op = Number(pubSignals[idx++]))} (${Operator[op]})`,
       "value(s)": isMultiValued(op) ? pubSignals.slice(idx).join(", ") : pubSignals[idx],

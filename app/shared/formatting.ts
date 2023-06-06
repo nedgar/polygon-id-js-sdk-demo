@@ -1,4 +1,6 @@
+import { Id } from "@iden3/js-iden3-core";
 import { JSONObject } from "@0xpolygonid/js-sdk";
+
 import { getAlpha3CountryCode } from "./countries";
 import { getAlphaCurrencyCode } from "./currencies";
 
@@ -52,4 +54,12 @@ export function formatQuerySubject(query?: JSONObject) {
       }
     })
     .join("\n AND ");
+}
+
+export function formatId(s: string) {
+    return Id.fromBigInt(BigInt(s)).string();
+}
+
+export function toHex(s: string) {
+  return `0x${BigInt(s).toString(16)}`;
 }
