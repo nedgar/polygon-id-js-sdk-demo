@@ -18,6 +18,8 @@ import { initServices } from "./services.server";
 import config from "~/config.server";
 import { getCircuitStorage } from "./circuits.server";
 
+const CCG_TRACEABILITY_CONTEXT_URL =
+  "https://w3c-ccg.github.io/traceability-vocab/contexts/traceability-v1.jsonld";
 const FIN_ASSETS_CONTEXT_URL =
   "https://raw.githubusercontent.com/nedgar/polygon-id-js-sdk-demo/main/schemas/json-ld/AssetsUnderManagement-v1.json-ld";
 const KYC_CONTEXT_URL =
@@ -32,6 +34,12 @@ export function getAuthRequestMessage(verifierDID: string, challengeType: Challe
         verifierDID,
         "Verify total assets under management is over threshold.",
         ...getFinancialAUMRequests("$gt", "SGD", 200_000)
+      );
+    case ChallengeType.FIN_DISCLOSE_BANK_ACCOUNT:
+      return getAuthRequest(
+        verifierDID,
+        "Verify bank account.",
+        getFinancialBankAccountRequest()
       );
     case ChallengeType.ID_PASSPORT_MATCHES:
       return getAuthRequest(
@@ -125,6 +133,22 @@ function getFinancialAUMRequests(
       },
     },
   ];
+}
+
+function getFinancialBankAccountRequest(): ZeroKnowledgeProofRequest {
+  return {
+    id: 8,
+    circuitId: CircuitId.AtomicQuerySigV2,
+    optional: false,
+    query: {
+      allowedIssuers: ["*"],
+      type: "BankAccount",
+      context: CCG_TRACEABILITY_CONTEXT_URL,
+      credentialSubject: {
+        accountId: {},
+      },
+    },
+  };
 }
 
 function getPassportMatchesRequests(): ZeroKnowledgeProofRequest[] {
@@ -268,12 +292,12 @@ export type VerifyAuthResponseChecks = {
   mediaType?: boolean;
   requestExists?: boolean;
   authVerified?: boolean;
-}
+};
 
 export type VerifyAuthResponseResult = {
   checks: VerifyAuthResponseChecks;
   errors: string[];
-}
+};
 
 export async function verifyAuthResponse(authToken: string): Promise<VerifyAuthResponseResult> {
   // TODO: check that the received response is actually in response to an earlier request that was sent

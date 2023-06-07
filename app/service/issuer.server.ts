@@ -31,6 +31,8 @@ function getCredentialRequest(subjectDID: DID, type: CredentialRequestType) {
       return getFinancialAUMRequest(subjectDID, "SGD", 234567);
     case CredentialRequestType.FIN_AUM_LOW:
       return getFinancialAUMRequest(subjectDID, "SGD", 12345);
+    case CredentialRequestType.FIN_BANK_ACCOUNT:
+      return getFinancialBankAccount(subjectDID);
     case CredentialRequestType.ID_PASSPORT:
       return getPassportRequest(subjectDID);
     case CredentialRequestType.KYC_AGE:
@@ -56,6 +58,34 @@ function getFinancialAUMRequest(
       id: subjectDID.toString(),
       currencyCode: getNumericCurrencyCode(currencyCode),
       valuation,
+    },
+    expiration: toSeconds(new Date("2030-01-01T00:00:00Z")),
+  };
+}
+
+function getFinancialBankAccount(subjectDID: DID): Partial<CredentialRequest> {
+  return {
+    credentialSchema:
+      "https://raw.githubusercontent.com/nedgar/polygon-id-js-sdk-demo/main/schemas/json/BankAccountCredential-v1.json",
+    type: "BankAccount",
+    credentialSubject: {
+      id: subjectDID.toString(),
+      accountId: "1111111",
+      BIC11: "TDOMCATTTOR", // TODO: change to HSBC
+      familyName: "Smith",
+      givenName: "Alice",
+      iban: "GB74GSLD04296280001319",
+      routingInfo: {
+        code: "GBDSC",
+        value: "042962",
+      },
+      address: {
+        streetAddress: "19 Knox St",
+        addressLocality: "Toronto",
+        addressRegion: "ON",
+        addressCountry: "CA",
+        postalCode: "M3B 1A2",
+      },
     },
     expiration: toSeconds(new Date("2030-01-01T00:00:00Z")),
   };
@@ -105,7 +135,11 @@ function getPassportRequest(subjectDID: DID): Partial<CredentialRequest> {
   };
 }
 
-export async function issueCredential(userId: string, issuerAlias: string, req: Partial<CredentialRequest>) {
+export async function issueCredential(
+  userId: string,
+  issuerAlias: string,
+  req: Partial<CredentialRequest>
+) {
   const issuerDID = getDID(userId, issuerAlias);
   invariant(issuerDID, "missing issuer DID");
 
@@ -113,8 +147,8 @@ export async function issueCredential(userId: string, issuerAlias: string, req: 
     ...req,
     revocationOpts: {
       baseUrl: config.rhsUrl,
-      type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof
-    }
+      type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+    },
   } as CredentialRequest);
   await credentialWallet.save(credential);
 

@@ -259,6 +259,7 @@ export default function VerificationPage() {
 
   const navigation = useNavigation();
   const formAction = navigation.formData?.get("_action");
+  console.log("formAction:", formAction);
 
   const zkpResponses = actionData?.authResponse?.body?.scope ?? [];
 
@@ -285,6 +286,9 @@ export default function VerificationPage() {
                 <option value="" aria-required="false">
                   --Select an option--
                 </option>
+                <option value={ChallengeType.FIN_DISCLOSE_BANK_ACCOUNT}>
+                  FIN: Disclose bank account (1 ZKP with VP)
+                </option>
                 <option value={ChallengeType.FIN_AUM_OVER_THRESHOLD}>
                   FIN: Total assets under management over threshold (2 ZKPs)
                 </option>
@@ -295,7 +299,7 @@ export default function VerificationPage() {
                   KYC: Country of residence is not sanctioned (1 ZKP)
                 </option>
                 <option value={ChallengeType.KYC_DISCLOSE_BIRTHDAY}>
-                  KYC: Disclose birthday (1 ZKP + VP)
+                  KYC: Disclose birthday (1 ZKP with VP)
                 </option>
                 <option value={ChallengeType.KYC_USER_IS_ADULT}>
                   KYC: User is an adult, at least 21 years old (1 ZKP)

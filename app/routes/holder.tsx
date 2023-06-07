@@ -227,6 +227,9 @@ export default function HolderPage() {
                 <option value={CredentialRequestType.FIN_AUM_LOW}>
                   Financial: Assets Under Management (low)
                 </option>
+                <option value={CredentialRequestType.FIN_BANK_ACCOUNT}>
+                  Financial: Bank Account
+                </option>
                 <option value={CredentialRequestType.ID_PASSPORT}>ID: Passport</option>
                 <option value={CredentialRequestType.KYC_AGE}>KYC: Age (date of birth)</option>
                 <option value={CredentialRequestType.KYC_COUNTRY_OF_RESIDENCE}>

@@ -1,0 +1,238 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "$metadata": {
+    "uris": {
+      "jsonLdContext": "https://w3c-ccg.github.io/traceability-vocab/contexts/traceability-v1.jsonld",
+      "jsonSchema": "https://raw.githubusercontent.com/nedgar/polygon-id-js-sdk-demo/main/schemas/json/BankAccount-v1.json"
+    }
+  },
+  "required": [
+    "@context",
+    "id",
+    "type",
+    "issuanceDate",
+    "credentialSubject",
+    "credentialSchema",
+    "credentialStatus",
+    "issuer"
+  ],
+  "properties": {
+    "@context": {
+      "type": ["string", "array", "object"]
+    },
+    "id": {
+      "type": "string"
+    },
+    "type": {
+      "type": ["string", "array"],
+      "items": {
+        "type": "string"
+      }
+    },
+    "issuer": {
+      "type": ["string", "object"],
+      "format": "uri",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    },
+    "issuanceDate": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expirationDate": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "credentialSchema": {
+      "type": "object",
+      "required": ["id", "type"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uri"
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "subjectPosition": {
+      "type": "string",
+      "enum": ["none", "index", "value"]
+    },
+    "merklizedRootPosition": {
+      "type": "string",
+      "enum": ["none", "index", "value"]
+    },
+    "revNonce": {
+      "type": "integer"
+    },
+    "version": {
+      "type": "integer"
+    },
+    "updatable": {
+      "type": "boolean"
+    },
+    "credentialSubject": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "title": "Credential Subject ID",
+          "type": "string",
+          "format": "uri"
+        },
+        "accountId": {
+          "type": "string",
+          "description": "Bank Account Id.",
+          "$linkedData": {
+            "term": "accountId",
+            "@id": "https://w3id.org/traceability#accountId"
+          }
+        },
+        "BIC11": {
+          "type": "string",
+          "description": "Business Identifier Code — ISO 9362 identification of the financial institution's branch.",
+          "$linkedData": {
+            "term": "BIC11",
+            "@id": "https://w3id.org/traceability#BIC11"
+          }
+        },
+        "iban": {
+          "type": "string",
+          "description": "International Bank Account Number — ISO 13616 identification of bank accounts across national borders.",
+          "$linkedData": {
+            "term": "iban",
+            "@id": "https://w3id.org/traceability#iban"
+          }
+        },
+        "familyName": {
+          "type": "string",
+          "description": "The family name.",
+          "$linkedData": {
+            "term": "familyName",
+            "@id": "http://schema.org/familyName"
+          }
+        },
+        "givenName": {
+          "type": "string",
+          "description": "The given name.",
+          "$linkedData": {
+            "term": "givenName",
+            "@id": "http://schema.org/givenName"
+          }
+        },
+        "address": {
+          "title": "Postal Address",
+          "description": "The postal address for the subject.",
+          "$linkedData": {
+            "term": "address",
+            "@id": "https://schema.org/PostalAddress"
+          },
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "array",
+              "readOnly": true,
+              "const": ["PostalAddress"],
+              "default": ["PostalAddress"],
+              "items": {
+                "type": "string",
+                "enum": ["PostalAddress"]
+              }
+            },
+            "name": {
+              "title": "Name",
+              "description": "The name of the entity in text.",
+              "type": "string",
+              "$linkedData": {
+                "term": "name",
+                "@id": "https://schema.org/name"
+              }
+            },
+            "streetAddress": {
+              "title": "Street Address",
+              "description": "The street address expressed as free form text. The street address is printed on paper as the first lines below the name. For example, the name of the street and the number in the street or the name of a building.",
+              "type": "string",
+              "$linkedData": {
+                "term": "streetAddress",
+                "@id": "https://schema.org/streetAddress"
+              }
+            },
+            "addressLocality": {
+              "title": "Address Locality",
+              "description": "Text specifying the name of the locality; for example, a city.",
+              "type": "string",
+              "$linkedData": {
+                "term": "addressLocality",
+                "@id": "https://schema.org/addressLocality"
+              }
+            },
+            "addressRegion": {
+              "title": "Address Region",
+              "description": "Text specifying a province or state in abbreviated format; for example, NJ.",
+              "type": "string",
+              "$linkedData": {
+                "term": "addressRegion",
+                "@id": "https://schema.org/addressRegion"
+              }
+            },
+            "addressCountry": {
+              "title": "Address Country",
+              "description": "The two-letter ISO 3166-1 alpha-2 country code.",
+              "type": "string",
+              "$linkedData": {
+                "term": "addressCountry",
+                "@id": "https://schema.org/addressCountry"
+              }
+            },
+            "crossStreet": {
+              "title": "Cross Street",
+              "description": "A street intersecting a main street (usually at right angles) and continuing on both sides of it.",
+              "type": "string",
+              "$linkedData": {
+                "term": "crossStreet",
+                "@id": "https://gs1.org/voc/crossStreet"
+              }
+            },
+            "countyCode": {
+              "title": "County Code",
+              "description": "A code that identifies a county. A county is a territorial division in some countries, forming the chief unit of local administration. In the US, a county is a political and administrative division of a state.",
+              "type": "string",
+              "$linkedData": {
+                "term": "countyCode",
+                "@id": "https://gs1.org/voc/countyCode"
+              }
+            },
+            "postalCode": {
+              "title": "Postal Code",
+              "description": "Text specifying the postal code for an address.",
+              "type": "string",
+              "$linkedData": {
+                "term": "postalCode",
+                "@id": "https://schema.org/postalCode"
+              }
+            },
+            "postOfficeBoxNumber": {
+              "title": "Post Office Box Number",
+              "description": "The number that identifies a PO box. A PO box is a box in a post office or other postal service location assigned to an organization where postal items may be kept.",
+              "type": "string",
+              "$linkedData": {
+                "term": "postOfficeBoxNumber",
+                "@id": "https://schema.org/postOfficeBoxNumber"
+              }
+            }
+          },
+          "additionalProperties": false,
+          "required": ["type"]
+        }
+      }
+    }
+  }
+}
