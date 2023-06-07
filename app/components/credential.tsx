@@ -1,6 +1,6 @@
 import type { W3CCredential } from "@0xpolygonid/js-sdk";
 import { ObjectGrid, NBSP } from "./object-grid";
-import { getFieldFormatter } from "~/shared/formatting";
+import { formatValue, getFieldFormatter } from "~/shared/formatting";
 
 interface Props {
   cred: W3CCredential;
@@ -33,5 +33,5 @@ function formatDate(dateStr?: string) {
 
 function formatField(field: string, val: any) {
   const fmt = getFieldFormatter(field);
-  return fmt ? `${val} (${fmt(val)})` : `${val}`;
+  return fmt ? `${val} (${fmt(val)})` : `${formatValue(val)}`;
 }

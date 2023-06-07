@@ -13,6 +13,13 @@ const OPS: JSONObject = {
   $nin: "NOT IN",
 };
 
+export function formatValue(val: any) {
+    if (typeof val === 'string') {
+        return val;
+    }
+    return JSON.stringify(val, null, " ");
+}
+
 export function getFieldFormatter(field: string) {
   switch (field) {
     case "countryCode":

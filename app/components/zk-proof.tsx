@@ -43,14 +43,21 @@ export function ZKProofDescription({ circuitId, proof }: Props) {
     ["Public signals", ""],
     ...decodePublicSignals(circuitId ?? proof.circuitId, proof.pub_signals),
   ];
+  const lastSignal = entries[entries.length - 1];
 
   const vc = (proof.vp as any)?.verifiableCredential;
   if (vc) {
+    const subjectProperties = Object.entries(vc.credentialSubject ?? {})
     entries.push(undefined);
-    entries.push(["Verifiable Presentation, subject details", ""]);
-    Object.entries(vc.credentialSubject ?? []).forEach(([key, val]) => {
+    entries.push(["Verifiable Presentation properties", ""]);
+    subjectProperties.forEach(([key, val]) => {
       entries.push([`  ${key}`, val]);
     });
+    const lastProp = subjectProperties[subjectProperties.length - 1];
+    console.log("last signal and VC prop:", lastSignal, lastProp);
+    if (lastSignal && lastProp && String(lastSignal[1]) !== String(lastProp[1])) {
+      lastSignal[1] = `${lastSignal[1]} (hash of ${lastProp[0]})`;
+    }
   }
 
   return <ObjectGrid entries={entries} />;
