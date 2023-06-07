@@ -4,6 +4,8 @@
 .git
 *.log
 
+circuits.zip
+
 /.cache
 /build
 /node_modules

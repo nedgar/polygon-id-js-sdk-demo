@@ -1,6 +1,8 @@
 import type { W3CCredential } from "@0xpolygonid/js-sdk";
-import { ObjectGrid, NBSP } from "./object-grid";
+
 import { formatValue, getFieldFormatter } from "~/shared/formatting";
+
+import { ObjectGrid } from "./object-grid";
 
 interface Props {
   cred: W3CCredential;

@@ -18,7 +18,7 @@ export async function getCircuitStorage(): Promise<ICircuitStorage> {
     const circuitIds = [
       CircuitId.AuthV2,
       CircuitId.AtomicQuerySigV2,
-      CircuitId.StateTransition,
+      // CircuitId.StateTransition,
       // CircuitId.AtomicQueryMTPV2
     ];
     for (let circuitId of circuitIds) {
