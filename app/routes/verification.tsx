@@ -3,11 +3,11 @@ import type {
   AuthorizationResponseMessage,
   W3CCredential,
 } from "@0xpolygonid/js-sdk";
-import { ethers, AlchemyProvider } from "ethers";
+// import { ethers, AlchemyProvider } from "ethers";
 import type { ActionArgs, LoaderArgs, TypedResponse } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { Form, Link, useActionData, useLoaderData, useNavigation } from "@remix-run/react";
-import { Fragment, useEffect, useMemo } from "react";
+import { Fragment, useEffect } from "react";
 import QRCode from "react-qr-code";
 import invariant from "tiny-invariant";
 
@@ -26,7 +26,7 @@ import {
 } from "~/service/verifier.server";
 import { requireUserId } from "~/session.server";
 import { ChallengeType } from "~/shared/challenge-type";
-import { UserTokenStatus, getUserTokenStatus, tokenContract } from "~/service/blockchain.server";
+// import { UserTokenStatus, getUserTokenStatus, tokenContract } from "~/service/blockchain.server";
 
 interface VerificationLoaderData {
   holderDID?: string;
@@ -43,7 +43,7 @@ interface VerificationActionData {
   token?: string;
   tokenDecoded?: any;
   verifyAuthResponseResult?: VerifyAuthResponseResult;
-  userTokenStatus?: UserTokenStatus;
+  // userTokenStatus?: UserTokenStatus;
   error?: string;
 }
 
@@ -155,11 +155,11 @@ export const action = async ({
       case "handleAuthResponse":
         data = await handleAuthResponse(values.authToken as string);
         break;
-      case "checkProofStatus":
-        data = {
-          userTokenStatus: await getUserTokenStatus(values.address as string),
-        };
-        break;
+      // case "checkProofStatus":
+      //   data = {
+      //     userTokenStatus: await getUserTokenStatus(values.address as string),
+      //   };
+      //   break;
       default: {
         invariant(false, `Unexpected action: ${_action}`);
       }
@@ -213,53 +213,56 @@ function AuthResponseVerification({ result }: { result: VerifyAuthResponseResult
   );
 }
 
-function OnChainStatus({ userTokenStatus }: { userTokenStatus?: UserTokenStatus }) {
-  return (
-    <Form method="post">
-      <label>Address:</label>{" "}
-      <input
-        type="text"
-        className="rounded border"
-        defaultValue="0x59c8c433344a65dD22fBDe54Cfa5d440954512Fa"
-        name="address"
-        pattern="0x[0-9A-Fa-f]{40}"
-        required
-        size={50}
-      />
-      <input type="hidden" name="requestId" value={1} />
-      <br />
-      <button
-        className={buttonClassName + " mt-2"}
-        name="_action"
-        type="submit"
-        value="checkProofStatus"
-      >
-        Check Proof Status
-      </button>
-      {userTokenStatus && (
-        <div className="mt-2">
-          {/* <p>Address: {userTokenStatus.address}</p> */}
-          <p>Request IDs with proof: {userTokenStatus.requestsWithProof.join(", ") || "<none>"}</p>
-          <p>Assigned roles: {userTokenStatus.roles.join(", ") || "<none>"}</p>
-        </div>
-      )}
-    </Form>
-  );
-}
+// function OnChainStatus({ userTokenStatus }: { userTokenStatus?: UserTokenStatus }) {
+//   return (
+//     <Form method="post">
+//       <label>Address:</label>{" "}
+//       <input
+//         type="text"
+//         className="rounded border"
+//         defaultValue="0x59c8c433344a65dD22fBDe54Cfa5d440954512Fa"
+//         name="address"
+//         pattern="0x[0-9A-Fa-f]{40}"
+//         required
+//         size={50}
+//       />
+//       <input type="hidden" name="requestId" value={1} />
+//       <br />
+//       <button
+//         className={buttonClassName + " mt-2"}
+//         name="_action"
+//         type="submit"
+//         value="checkProofStatus"
+//       >
+//         Check Proof Status
+//       </button>
+//       {userTokenStatus && (
+//         <div className="mt-2">
+//           <p>Address: {userTokenStatus.address}</p>
+//           <p>Request IDs with proof: {userTokenStatus.requestsWithProof.join(", ") || "<none>"}</p>
+//           <p>Assigned roles: {userTokenStatus.roles.join(", ") || "<none>"}</p>
+//         </div>
+//       )}
+//     </Form>
+//   );
+// }
 
 export default function VerificationPage() {
-  const { holderDID, verifierDID, verifyAuthResponseResult } = useLoaderData<typeof loader>();
-
+  const { holderDID, verifierDID } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
+  const navigation = useNavigation();
+  const formAction = navigation.formData?.get("_action");
+
   useEffect(() => {
+    // console.log("actionData:", actionData);
     if (actionData?.error) {
-      console.error(`Error in action data: ${actionData.error}`);
+      console.error("Error in action data:", actionData?.error);
     }
   }, [actionData]);
 
-  const navigation = useNavigation();
-  const formAction = navigation.formData?.get("_action");
-  console.log("formAction:", formAction);
+  useEffect(() => {
+    console.log("formAction:", formAction);
+  }, [formAction]);
 
   const zkpResponses = actionData?.authResponse?.body?.scope ?? [];
 
@@ -412,7 +415,7 @@ export default function VerificationPage() {
                     >
                       {formAction === "generateProof"
                         ? "Generating proof (this can take a while)..."
-                        : "Generate Proof"}
+                        : "Generate Proof(s)"}
                     </button>
                     {holderDID && <input type="hidden" name="holderDID" value={holderDID} />}
                     {actionData?.authRequest && (

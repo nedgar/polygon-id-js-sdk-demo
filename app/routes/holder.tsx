@@ -79,7 +79,7 @@ export const action = async ({ request }: ActionArgs): Promise<TypedResponse<Hol
         values.credentialType as CredentialRequestType
       );
       if (!isSupportedType) {
-        return json({ error: "Unsupported credential type" });
+        return json({ error: `Unsupported credential type: ${values.credentialType}` });
       }
 
       const credential = await requestCredential(
