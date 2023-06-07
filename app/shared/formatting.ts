@@ -1,8 +1,8 @@
-import { Id } from "@iden3/js-iden3-core";
 import { JSONObject } from "@0xpolygonid/js-sdk";
 
 import { getAlpha3CountryCode } from "./countries";
 import { getAlphaCurrencyCode } from "./currencies";
+import { Id } from "./iden3/id";
 
 const OPS: JSONObject = {
   $eq: "=",
