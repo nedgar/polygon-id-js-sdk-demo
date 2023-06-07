@@ -11,6 +11,8 @@
     "dev:remix": "cross-env NODE_ENV=development binode --require ./mocks -- @remix-run/dev:remix dev",
     "circuits:download": "curl https://iden3-circuits-bucket.s3.eu-west-1.amazonaws.com/latest.zip -o circuits.zip",
     "circuits:extract": "unzip -o circuits.zip '*.zkey' '*.wasm' '*.json' -d app/circuits",
+    "docker:build": "docker build -t polygon-id-js-sdk-demo --progress plain .",
+    "docker:run": "docker run -p 8080:8080 --env-file .env.docker polygon-id-js-sdk-demo",
     "format": "prettier --write .",
     "generate:css": "tailwindcss -o ./app/styles/tailwind.css",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
