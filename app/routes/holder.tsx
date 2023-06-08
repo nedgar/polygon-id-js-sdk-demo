@@ -1,25 +1,33 @@
 import type { W3CCredential } from "@0xpolygonid/js-sdk";
 import type { ActionArgs, LoaderArgs, TypedResponse } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { Form, Link, useActionData, useLoaderData, useNavigation } from "@remix-run/react";
+import {
+  Form,
+  Link,
+  useActionData,
+  useLoaderData,
+  useLocation,
+  useNavigation,
+} from "@remix-run/react";
+import { useEffect, useMemo } from "react";
 import invariant from "tiny-invariant";
 
 import { CredentialDescription } from "~/components/credential";
 import { Section } from "~/components/section";
 import {
   KeyData,
+  createIdentity,
   createKey,
-  getKeyData,
   getAuthCredential,
+  getDID,
+  getKeyData,
   getStats,
   getSubjectCredentials,
-  getDID,
 } from "~/service/identity.server";
-import { createIdentity } from "~/service/identity.server";
 import { requestCredential } from "~/service/issuer.server";
-import { CredentialRequestType } from "~/shared/credential-request-type";
 import { requireUserId } from "~/session.server";
-import { useEffect, useMemo } from "react";
+import { CredentialRequestType } from "~/shared/credential-request-type";
+import { useOptionalNames } from "~/utils";
 
 interface HolderLoaderData {
   keyData?: KeyData;
@@ -56,7 +64,7 @@ export const loader = async ({ request }: LoaderArgs): Promise<TypedResponse<Hol
 export const action = async ({ request }: ActionArgs): Promise<TypedResponse<HolderActionData>> => {
   const userId = await requireUserId(request);
 
-  console.log("before action:", await getStats());
+  // console.log("before action:", await getStats());
   const { _action, ...values } = Object.fromEntries(await request.formData());
   switch (_action) {
     case "newRandomKey":
@@ -64,12 +72,12 @@ export const action = async ({ request }: ActionArgs): Promise<TypedResponse<Hol
       const keyData = await getKeyData(userId, HOLDER_ALIAS);
       invariant(keyData);
 
-      console.log("after action:", await getStats());
+      // console.log("after action:", await getStats());
       return json({ keyData });
     case "createIdentity":
       await createIdentity(userId, HOLDER_ALIAS);
       const authCredential = getAuthCredential(userId, HOLDER_ALIAS);
-      console.log("after action:", await getStats());
+      // console.log("after action:", await getStats());
       return json({ authCredential });
     case "requestCredential":
       if (!values.credentialType) {
@@ -88,7 +96,7 @@ export const action = async ({ request }: ActionArgs): Promise<TypedResponse<Hol
         HOLDER_ALIAS,
         values.credentialType as CredentialRequestType
       );
-      console.log("after action:", await getStats());
+      // console.log("after action:", await getStats());
       return json({ issuedCredential: credential });
     default: {
       invariant(false, "Unexpected action");
@@ -100,6 +108,9 @@ const buttonClassName =
   "rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-600 focus:bg-blue-400 disabled:bg-blue-300 mb-1 ml-16";
 
 export default function HolderPage() {
+  const location = useLocation();
+  const names = useOptionalNames();
+
   const { keyData, authCredential, issuerDID, subjectCredentials } = useLoaderData<typeof loader>();
 
   const actionData = useActionData<typeof action>();
@@ -116,7 +127,9 @@ export default function HolderPage() {
 
   return (
     <div className="px-4 py-4">
-      <h1 className="mb-4 text-2xl font-bold">Polygon ID JS-SDK Demo – Holder</h1>
+      <h1 className="mb-4 text-2xl font-bold">
+        Polygon ID JS-SDK Demo – Holder {names.holder && `(${names.holder})`}
+      </h1>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
@@ -205,7 +218,10 @@ export default function HolderPage() {
             title={
               <>
                 3: Request Credentials from{" "}
-                <Link className="text-blue-500 underline" to="/issuer">
+                <Link
+                  className="text-blue-500 underline"
+                  to={{ pathname: "/issuer", search: location.search }}
+                >
                   Issuer
                 </Link>
               </>
@@ -243,7 +259,9 @@ export default function HolderPage() {
                 type="submit"
                 value="requestCredential"
               >
-                {formAction === "requestCredential" ? "Requesting credential..." : "Request Credential"}
+                {formAction === "requestCredential"
+                  ? "Requesting credential..."
+                  : "Request Credential"}
               </button>
             </Form>
           </Section>
@@ -267,7 +285,10 @@ export default function HolderPage() {
           </Section>
           <Section title="4: Verify Credentials" className="mt-4 border">
             Click{" "}
-            <Link className="text-blue-500 underline" to="/verification">
+            <Link
+              className="text-blue-500 underline"
+              to={{ pathname: "/verification", search: location.search }}
+            >
               here
             </Link>{" "}
             to start a credential verification flow.

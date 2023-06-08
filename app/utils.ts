@@ -1,4 +1,4 @@
-import { useMatches } from "@remix-run/react";
+import { useMatches, useSearchParams } from "@remix-run/react";
 import { useMemo } from "react";
 
 import type { User } from "~/models/user.server";
@@ -33,9 +33,7 @@ export function safeRedirect(
  * @param {string} id The route id
  * @returns {JSON|undefined} The router data or undefined if not found
  */
-export function useMatchesData(
-  id: string
-): Record<string, unknown> | undefined {
+export function useMatchesData(id: string): Record<string, unknown> | undefined {
   const matchingRoutes = useMatches();
   const route = useMemo(
     () => matchingRoutes.find((route) => route.id === id),
@@ -68,4 +66,13 @@ export function useUser(): User {
 
 export function validateEmail(email: unknown): email is string {
   return typeof email === "string" && email.length > 3 && email.includes("@");
+}
+
+export function useOptionalNames(): Record<string, string | null> {
+  const [params] = useSearchParams();
+  return {
+    holder: params.get("holderName"),
+    issuer: params.get("issuerName"),
+    verifier: params.get("verifierName"),
+  };
 }

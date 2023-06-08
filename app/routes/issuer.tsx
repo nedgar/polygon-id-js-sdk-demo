@@ -1,8 +1,8 @@
 import type { W3CCredential } from "@0xpolygonid/js-sdk";
 import type { ActionArgs, LoaderArgs, TypedResponse } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { Form, Link, useLoaderData, useNavigation } from "@remix-run/react";
-import { useEffect, useMemo } from "react";
+import { Form, Link, useLoaderData, useLocation, useNavigation } from "@remix-run/react";
+import { useMemo } from "react";
 import invariant from "tiny-invariant";
 import { CredentialDescription } from "~/components/credential";
 import { Section } from "~/components/section";
@@ -17,6 +17,7 @@ import {
 } from "~/service/identity.server";
 import { createIdentity } from "~/service/identity.server";
 import { requireUserId } from "~/session.server";
+import { useOptionalNames } from "~/utils";
 
 interface IssuerData {
   keyData?: KeyData;
@@ -28,7 +29,11 @@ const ISSUER_ALIAS = "issuer";
 
 export const meta = () => [{ title: "Issuer - Polygon ID JS SDK Demo" }];
 
-export const loader = async ({ request }: LoaderArgs): Promise<TypedResponse<IssuerData>> => {
+export const loader = async ({
+  request,
+  params,
+}: LoaderArgs): Promise<TypedResponse<IssuerData>> => {
+  console.log("params:", params);
   const userId = await requireUserId(request);
   const keyData = await getKeyData(userId, ISSUER_ALIAS);
   const authCredential = getAuthCredential(userId, ISSUER_ALIAS);
@@ -40,10 +45,14 @@ export const loader = async ({ request }: LoaderArgs): Promise<TypedResponse<Iss
   });
 };
 
-export const action = async ({ request }: ActionArgs): Promise<TypedResponse<IssuerData>> => {
+export const action = async ({
+  request,
+  params,
+}: ActionArgs): Promise<TypedResponse<IssuerData>> => {
+  console.log("params:", params);
   const userId = await requireUserId(request);
 
-  console.log("before action:", await getStats());
+  // console.log("before action:", await getStats());
   const { _action, ...values } = Object.fromEntries(await request.formData());
   switch (_action) {
     case "newRandomKey":
@@ -51,12 +60,12 @@ export const action = async ({ request }: ActionArgs): Promise<TypedResponse<Iss
       const keyData = await getKeyData(userId, ISSUER_ALIAS);
       invariant(keyData);
 
-      console.log("after action:", await getStats());
+      // console.log("after action:", await getStats());
       return json({ keyData });
     case "createIdentity":
       await createIdentity(userId, ISSUER_ALIAS);
       const authCredential = getAuthCredential(userId, ISSUER_ALIAS);
-      console.log("after action:", await getStats());
+      // console.log("after action:", await getStats());
       return json({ authCredential });
     default: {
       invariant(false, "Unexpected action");
@@ -68,15 +77,22 @@ const buttonClassName =
   "rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-600 focus:bg-blue-400 disabled:bg-blue-300 mb-1 ml-16";
 
 export default function IssuerPage() {
+  const location = useLocation();
+  const names = useOptionalNames();
+
   const { keyData, authCredential, issuedCredentials } = useLoaderData<typeof loader>();
 
   const navigation = useNavigation();
-  const formAction = useMemo(() => navigation.formData?.get("_action"), [navigation.formData]);
+  const formAction = useMemo(
+    () => String(navigation.formData?.get("_action")),
+    [navigation.formData]
+  );
 
   return (
     <div className="px-4 py-4">
-      <h1 className="mb-4 text-2xl font-bold">Polygon ID JS-SDK Demo – Issuer</h1>
-
+      <h1 className="mb-4 text-2xl font-bold">
+        Polygon ID JS-SDK Demo – Issuer {names.issuer && `(${names.issuer})`}
+      </h1>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Section title="1: Generate Issuer Key" className="border">
@@ -164,7 +180,10 @@ export default function IssuerPage() {
             title={
               <>
                 Issued Credentials (
-                <Link className="text-blue-500 underline" to="/holder">
+                <Link
+                  className="text-blue-500 underline"
+                  to={{ pathname: "/holder", search: location.search }}
+                >
                   Holder
                 </Link>{" "}
                 must request)

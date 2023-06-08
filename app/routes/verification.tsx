@@ -6,7 +6,14 @@ import type {
 // import { ethers, AlchemyProvider } from "ethers";
 import type { ActionArgs, LoaderArgs, TypedResponse } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { Form, Link, useActionData, useLoaderData, useNavigation } from "@remix-run/react";
+import {
+  Form,
+  Link,
+  useActionData,
+  useLoaderData,
+  useLocation,
+  useNavigation,
+} from "@remix-run/react";
 import { Fragment, useEffect } from "react";
 import QRCode from "react-qr-code";
 import invariant from "tiny-invariant";
@@ -26,6 +33,7 @@ import {
 } from "~/service/verifier.server";
 import { requireUserId } from "~/session.server";
 import { ChallengeType } from "~/shared/challenge-type";
+import { useOptionalNames } from "~/utils";
 // import { UserTokenStatus, getUserTokenStatus, tokenContract } from "~/service/blockchain.server";
 
 interface VerificationLoaderData {
@@ -248,8 +256,13 @@ function AuthResponseVerification({ result }: { result: VerifyAuthResponseResult
 // }
 
 export default function VerificationPage() {
+  const location = useLocation();
+  const names = useOptionalNames();
+
   const { holderDID, verifierDID } = useLoaderData<typeof loader>();
+
   const actionData = useActionData<typeof action>();
+
   const navigation = useNavigation();
   const formAction = navigation.formData?.get("_action");
 
@@ -272,7 +285,10 @@ export default function VerificationPage() {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Section title="Verifier Identity" className="border">
+          <Section
+            title={<>Verifier Identity {names.verifier && `(${names.verifier})`}</>}
+            className="border"
+          >
             <p>
               <label>DID:</label>
               <textarea className="w-full rounded border" readOnly value={verifierDID} />
@@ -281,11 +297,7 @@ export default function VerificationPage() {
           <Section title="1: Verifier Presents Authorization Request" className="mt-4 border">
             <Form className="mt-2" method="post">
               <label>Choose request type: </label>
-              <select
-                className="border"
-                name="challengeType"
-                required
-              >
+              <select className="border" name="challengeType" required>
                 <option value="" aria-required="false">
                   --Select an option--
                 </option>
@@ -346,10 +358,13 @@ export default function VerificationPage() {
             className="border"
             title={
               <>
-                <Link className="text-blue-500 underline" to="/holder">
+                <Link
+                  className="text-blue-500 underline"
+                  to={{ pathname: "/holder", search: location.search }}
+                >
                   Holder
                 </Link>{" "}
-                Identity
+                Identity {names.holder && `(${names.holder})`}
               </>
             }
           >
