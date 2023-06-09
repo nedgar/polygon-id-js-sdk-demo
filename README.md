@@ -42,6 +42,25 @@ node -p 'Math.random().toString(36).slice(2)'
 
 See also `app/config.server.ts`, where these are used.
 
+## Deployment
+
+### Google Cloud Deployment
+
+Reference: https://cloud.google.com/build/docs/build-push-docker-image
+
+```sh
+gcloud init
+gcloud builds submit --region=europe-west1 --tag europe-west1-docker.pkg.dev/$GCLOUD_ORG_ID/polygon-id-js-sdk-demo/$IMAGE_NAME_FOR_SERVER
+```
+
+Example `IMAGE_NAME_FOR_SERVER`: `v0.2-20230421-for-server:tag1`.
+
+A Docker image named `<IMAGE_NAME_FOR_SERVER>` is built from the `Dockerfile` and pushed to the Artifact Registry. Then, in the `k8s.yaml` file, replace the image name defined aboved in `spec.template.spec.containers.image` and execute:
+
+```sh
+kubectl apply -f k8s.yaml
+```
+
 ## Using Remix Run
 
 This is built using the [Remix Run](https://remix.run) framework's [Indie Stack](https://remix.run/stacks). 
