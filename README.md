@@ -49,7 +49,11 @@ See also `app/config.server.ts`, where these are used.
 Reference: https://cloud.google.com/build/docs/build-push-docker-image
 
 ```sh
+# first time setup
+brew install google-cloud-sdk  # on Mac
 gcloud init
+gcloud components install kubectl
+
 gcloud builds submit --region=europe-west1 --tag europe-west1-docker.pkg.dev/$GCLOUD_ORG_ID/polygon-id-js-sdk-demo/$IMAGE_NAME_FOR_SERVER
 ```
 
@@ -59,6 +63,18 @@ A Docker image named `<IMAGE_NAME_FOR_SERVER>` is built from the `Dockerfile` an
 
 ```sh
 kubectl apply -f k8s.yaml
+```
+
+To list the deployed pod(s):
+
+```sh
+kubectl get pod --namespace=github-polygon
+```
+
+To show detailed info for the pod:
+
+```sh
+kubectl get pod <POD_NAME> --namespace=github-polygon
 ```
 
 ## Using Remix Run
