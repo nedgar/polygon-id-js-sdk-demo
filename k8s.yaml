@@ -34,6 +34,11 @@ spec:
   selector:
     matchLabels:
       app: "polygon-id-js-sdk-demo"
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate      
   template:
     metadata:
       labels:
@@ -42,7 +47,7 @@ spec:
       restartPolicy: Always
       containers:
         - name: "polygon-id-js-sdk-demo"
-          image: "europe-west1-docker.pkg.dev/openhabour-11223/polygon-id-js-sdk-demo/v0.2-20230421-for-server:tag1"
+          image: "europe-west1-docker.pkg.dev/openhabour-11223/polygon-id-js-sdk-demo/20230609b"
           env:
             - name: "SESSION_SECRET"
               valueFrom:
@@ -54,3 +59,14 @@ spec:
                 configMapKeyRef:
                   key: "rpc_url"
                   name: "polygon-id-js-sdk-demo-config"
+          # resizePolicy:
+          #   - resourceName: cpu
+          #     restartPolicy: NotRequired
+          #   - resourceName: memory
+          #     restartPolicy: RestartContainer
+          resources:
+            limits:
+              cpu: "12"
+            requests:
+              cpu: "4"
+              memory: "600Mi"
