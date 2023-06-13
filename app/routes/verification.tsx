@@ -199,10 +199,26 @@ function AuthResponseVerification({ result }: { result: VerifyAuthResponseResult
       <div className="mt-2">
         <p>Checks:</p>
         <ul className="ml-4 list-inside list-disc">
-          <li>token syntax: {symbol(checks.tokenSyntax)}</li>
-          <li>media type is iden3 ZKP: {symbol(checks.mediaType)}</li>
-          <li>has matching request: {symbol(checks.requestExists)}</li>
-          <li>auth query satisfied: {symbol(checks.authVerified)}</li>
+          <li>JWZ token syntax is valid: {symbol(checks.tokenSyntax)}</li>
+          <li>response media type is Iden3 ZKP: {symbol(checks.mediaType)}</li>
+          <li>payload signature is valid (signed by user, no tampering)</li>
+          <li>a matching request exists (same ID and schema): {symbol(checks.requestExists)}</li>
+          <li>ZKP of credential claim is satisfied: {symbol(checks.authVerified)}</li>
+          <ul className="ml-4 list-inside list-disc">
+            <li>user is the claim's subject</li>
+            <li>claim schema matches request</li>
+            <li>it's not expired</li>
+            <li>issuer's auth claim is valid:</li>
+            <ul className="ml-4 list-inside list-disc">
+              <li>auth claim schema is Iden3 AuthV2</li>
+              <li>auth claim exists and has not been revoked from issuer's ID state (MTP)</li>
+              <li>(issuer's public key is extracted from auth claim)</li>
+            </ul>
+            <li>claim signature is valid (claim signed by issuer, no tampering)</li>
+            <li>claim exists and has not been revoked from issuer's ID state</li>
+            <li>queried property exists in credential (MTP)</li>
+            <li>query is satisfied by property value</li>
+          </ul>
         </ul>
       </div>
       <div className="mt-2">
