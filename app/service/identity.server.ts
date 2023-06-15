@@ -2,7 +2,6 @@ import {
   AuthorizationRequestMessage,
   BjjProvider,
   core,
-  CredentialRequest,
   CredentialStatusType,
   CredentialStorage,
   CredentialWallet,
@@ -25,6 +24,7 @@ import {
   W3CCredential,
 } from "@0xpolygonid/js-sdk";
 
+import { PublicKey } from "@iden3/js-crypto";
 import { BytesHelper, DID } from "@iden3/js-iden3-core";
 import { randomBytes } from "crypto";
 import invariant from "tiny-invariant";
@@ -150,7 +150,9 @@ export interface KeyData {
 export async function getKeyData(userId: string, alias: string): Promise<KeyData | undefined> {
   const idData = getIdentityData(userId, alias);
   if (idData) {
-    const publicKey = await kms.publicKey(idData.keyId);
+    const publicKey = (await kms.publicKey(idData.keyId)) as PublicKey;
+    invariant(typeof publicKey === "object");
+
     return {
       keyId: idData.keyId.id, // only serialize the ID part, not the type
       publicKey: {
@@ -179,7 +181,7 @@ export async function createIdentity(userId: string, alias: string) {
     networkId: core.NetworkId.Mumbai,
     revocationOpts: {
       baseUrl: rhsUrl,
-      type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof
+      type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
     },
     seed: idData.seed,
   });
