@@ -1,6 +1,7 @@
 import { auth, loaders, protocol, resolver } from "@iden3/js-iden3-auth";
 import {
   AuthorizationRequestMessage,
+  AuthorizationResponseMessage,
   CircuitId,
   ICircuitStorage,
   PROTOCOL_CONSTANTS,
@@ -36,11 +37,7 @@ export function getAuthRequestMessage(verifierDID: string, challengeType: Challe
         ...getFinancialAUMRequests("$gt", "SGD", 200_000)
       );
     case ChallengeType.FIN_DISCLOSE_BANK_ACCOUNT:
-      return getAuthRequest(
-        verifierDID,
-        "Verify bank account.",
-        getFinancialBankAccountRequest()
-      );
+      return getAuthRequest(verifierDID, "Verify bank account.", getFinancialBankAccountRequest());
     case ChallengeType.ID_PASSPORT_MATCHES:
       return getAuthRequest(
         verifierDID,
@@ -240,6 +237,14 @@ if (!global.__authRequests__) {
 
 const authRequests = global.__authRequests__;
 
+export function getAuthRequestForThread(threadId: string) {
+  return authRequests.get(threadId);
+}
+
+export function clearAuthRequestForThread(threadId: string): boolean {
+  return authRequests.delete(threadId);
+}
+
 function getAuthRequest(
   verifierDID: string,
   reason: string,
@@ -259,8 +264,6 @@ function getAuthRequest(
       reason,
     },
   };
-
-  // TODO: remember the request to validate the subsequent response
 
   authRequests.set(threadId, authRequest);
 
@@ -295,6 +298,8 @@ export type VerifyAuthResponseChecks = {
 };
 
 export type VerifyAuthResponseResult = {
+  authRequest?: AuthorizationRequestMessage;
+  authResponse?: AuthorizationResponseMessage;
   checks: VerifyAuthResponseChecks;
   errors: string[];
 };
@@ -310,6 +315,9 @@ export async function verifyAuthResponse(authToken: string): Promise<VerifyAuthR
 
   const checks: VerifyAuthResponseChecks = {};
   const errors: string[] = [];
+
+  let authRequest: AuthorizationRequestMessage | undefined;
+  let authResponse: AuthorizationResponseMessage | undefined;
 
   try {
     const envelope = new TextEncoder().encode(authToken);
@@ -328,16 +336,18 @@ export async function verifyAuthResponse(authToken: string): Promise<VerifyAuthR
       throw new Error("Missing thread ID");
     }
 
-    const authRequest = authRequests.get(unpackedMessage.thid);
+    authRequest = getAuthRequestForThread(unpackedMessage.thid);
     checks.requestExists = !!authRequest;
     if (!authRequest) {
       throw Error("No auth request found for thread ID");
     }
 
+    authResponse = unpackedMessage as AuthorizationResponseMessage;
     const verifier = await getAuthVerifier();
     checks.authVerified = false;
+
     await verifier.verifyAuthResponse(
-      unpackedMessage as protocol.AuthorizationResponseMessage,
+      authResponse as protocol.AuthorizationResponseMessage,
       authRequest as protocol.AuthorizationRequestMessage
     );
     checks.authVerified = true;
@@ -345,5 +355,5 @@ export async function verifyAuthResponse(authToken: string): Promise<VerifyAuthR
     console.error("Error in verifyAuthResponse:", err);
     errors.push(err?.message ?? "Unknown error in verifyAuthResponse");
   }
-  return { checks, errors };
+  return { authRequest, authResponse, checks, errors };
 }

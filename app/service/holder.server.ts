@@ -15,17 +15,43 @@ import invariant from "tiny-invariant";
 import { credentialWallet, dataStorage, identityWallet } from "./identity.server";
 import { initServices } from "./services.server";
 
+export interface HolderThreadState {
+  selectedCredential: W3CCredential;
+  authResponse: AuthorizationResponseMessage;
+  token: string;
+  tokenDecoded: JSONObject;
+}
+
+declare global {
+  var __threadStates__: Map<string, HolderThreadState>;
+}
+
+if (!global.__threadStates__) {
+  global.__threadStates__ = new Map();
+}
+
+const threadStates = global.__threadStates__;
+
+export function clearThreadState(threadId: string) {
+  threadStates.delete(threadId);
+}
+
+export function getThreadState(threadId: string) {
+  return threadStates.get(threadId);
+}
+
+function setThreadState(threadId: string, threadState: HolderThreadState) {
+  threadStates.set(threadId, threadState);
+}
+
 export async function generateAuthResponse(
   userDID: string,
   authRequest: AuthorizationRequestMessage,
   credentialId: string
 ): Promise<{
   token: string;
-  authRequest: AuthorizationRequestMessage;
-  authResponse: AuthorizationResponseMessage;
-  tokenDecoded: any;
-  credential: W3CCredential;
 }> {
+  invariant(authRequest.thid, "missing thread ID");
   const scope = authRequest.body?.scope;
   invariant(
     Array.isArray(scope) && scope.length >= 1,
@@ -53,14 +79,21 @@ export async function generateAuthResponse(
 
   // parse the token to show in UI
   const parsedToken = await Token.parse(result.token);
+  const tokenDecoded: JSONObject = {
+    headers: JSON.parse(parsedToken.serializeHeaders()),
+    payload: JSON.parse(parsedToken.getPayload()),
+    zkProof: parsedToken.zkProof,
+  };
+
+  setThreadState(authRequest.thid, {
+    selectedCredential: credential,
+    authResponse: result.authResponse,
+    token: result.token,
+    tokenDecoded,
+  });
+
   return {
-    ...result,
-    tokenDecoded: {
-      headers: JSON.parse(parsedToken.serializeHeaders()),
-      payload: JSON.parse(parsedToken.getPayload()),
-      zkProof: parsedToken.zkProof,
-    },
-    credential, // the matching credential is not sent to verifier, but is returned to show in UI
+    token: result.token,
   };
 }
 

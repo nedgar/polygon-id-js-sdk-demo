@@ -6,7 +6,7 @@ export const meta = () => [{ title: "Polygon ID JS SDK Demo" }];
 
 export default function Index() {
   const [searchParams] = useSearchParams();
-  console.log("searchParams:", searchParams.toString());
+  // console.log("searchParams:", searchParams.toString());
 
   const user = useOptionalUser();
 

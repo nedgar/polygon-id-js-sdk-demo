@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { ReactNode, Ref, forwardRef } from "react";
 
 interface Props {
   title: ReactNode;
@@ -6,11 +6,11 @@ interface Props {
   children?: ReactNode;
 }
 
-export function Section({ title, className, children }: Props) {
+export const Section = forwardRef(function Section({ title, className, children }: Props, ref?: Ref<HTMLElement>) {
   return (
-    <section className={`rounded-md ${className}`}>
+    <section className={`rounded-md ${className}`} ref={ref}>
       <h2 className="bg-gray-200 px-4 py-2 text-lg font-bold">{title}</h2>
       <div className="px-4 py-4">{children}</div>
     </section>
   );
-}
+});

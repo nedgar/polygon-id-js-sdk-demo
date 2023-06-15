@@ -1,10 +1,11 @@
 import type {
   AuthorizationRequestMessage,
   AuthorizationResponseMessage,
+  JSONObject,
   W3CCredential,
 } from "@0xpolygonid/js-sdk";
 // import { ethers, AlchemyProvider } from "ethers";
-import type { ActionArgs, LoaderArgs, TypedResponse } from "@remix-run/node";
+import { ActionArgs, LoaderArgs, TypedResponse, redirect } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import {
   Form,
@@ -14,7 +15,8 @@ import {
   useLocation,
   useNavigation,
 } from "@remix-run/react";
-import { Fragment, useEffect } from "react";
+import { ReactElement } from "react";
+import { Fragment, useEffect, useRef } from "react";
 import QRCode from "react-qr-code";
 import invariant from "tiny-invariant";
 
@@ -24,10 +26,11 @@ import { CredentialDescription } from "~/components/credential";
 import { ObjectGrid } from "~/components/object-grid";
 import { Section } from "~/components/section";
 import { ZKProofDescription } from "~/components/zk-proof";
-import { generateAuthResponse } from "~/service/holder.server";
+import { clearThreadState, generateAuthResponse, getThreadState } from "~/service/holder.server";
 import { findMatchingCredentials, getDID } from "~/service/identity.server";
 import {
   VerifyAuthResponseResult,
+  getAuthRequestForThread,
   getAuthRequestMessage,
   verifyAuthResponse,
 } from "~/service/verifier.server";
@@ -39,17 +42,21 @@ import { useOptionalNames } from "~/utils";
 interface VerificationLoaderData {
   holderDID?: string;
   verifierDID?: string;
+  authRequest?: AuthorizationRequestMessage;
+  credential?: W3CCredential;
+  authResponse?: AuthorizationResponseMessage;
   verifyAuthResponseResult?: VerifyAuthResponseResult;
+  token?: string
+  tokenDecoded?: any;
 }
 
 interface VerificationActionData {
   challengeType?: string;
-  authRequest?: AuthorizationRequestMessage;
   matchingCredentials?: Array<W3CCredential>;
-  credential?: W3CCredential;
-  authResponse?: AuthorizationResponseMessage;
+  authRequest?: AuthorizationRequestMessage;
+  // credential?: W3CCredential;
+  // authResponse?: AuthorizationResponseMessage;
   token?: string;
-  tokenDecoded?: any;
   verifyAuthResponseResult?: VerifyAuthResponseResult;
   // userTokenStatus?: UserTokenStatus;
   error?: string;
@@ -64,9 +71,20 @@ export const loader = async ({
 }: LoaderArgs): Promise<TypedResponse<VerificationLoaderData>> => {
   const userId = await requireUserId(request);
 
+  const searchParams = new URL(request.url).searchParams;
+  const threadId = searchParams.get("thid");
+  console.log("threadId:", threadId);
+
+  const holderThreadState = threadId ? getThreadState(threadId) : undefined;
   return json({
     holderDID: getDID(userId, "holder")?.toString(),
     verifierDID: VERIFIER_DID.toString(),
+    authRequest: threadId ? getAuthRequestForThread(threadId) : undefined,
+    credential: holderThreadState?.selectedCredential,
+    authResponse: holderThreadState?.authResponse,
+    token: holderThreadState?.token,
+    tokenDecoded: holderThreadState?.tokenDecoded,
+
     // verifyAuthResponseResult: {
     //   checks: {
     //     tokenSyntax: true,
@@ -96,6 +114,7 @@ export const action = async ({
     }
 
     const authRequest = getAuthRequestMessage(verifierDID, challengeType);
+
     return {
       challengeType,
       authRequest,
@@ -105,11 +124,14 @@ export const action = async ({
   async function scanChallengeQR(authRequestJson?: string): Promise<VerificationActionData> {
     invariant(typeof authRequestJson === "string", "missing auth request message");
 
-    const authRequest = JSON.parse(authRequestJson);
+    const authRequest = JSON.parse(authRequestJson) as AuthorizationRequestMessage;
+    if (authRequest.thid) {
+      clearThreadState(authRequest.thid);
+    }
+
     const matchingCredentials = await findMatchingCredentials(userId, "holder", authRequest);
 
     return {
-      authRequest,
       matchingCredentials,
     };
   }
@@ -149,7 +171,7 @@ export const action = async ({
           values.verifierDID as string,
           values.challengeType as ChallengeType
         );
-        break;
+        return redirect(`?thid=${data.authRequest?.thid}`);
       case "scanChallengeQR":
         data = await scanChallengeQR(values.authRequest as string);
         break;
@@ -207,7 +229,7 @@ function AuthResponseVerification({ result }: { result: VerifyAuthResponseResult
           <ul className="ml-4 list-inside list-disc">
             <li>user is the claim's subject</li>
             <li>claim schema matches request</li>
-            <li>it's not expired</li>
+            <li>claim has not expired</li>
             <li>issuer's auth claim is valid:</li>
             <ul className="ml-4 list-inside list-disc">
               <li>auth claim schema is Iden3 AuthV2</li>
@@ -275,7 +297,8 @@ export default function VerificationPage() {
   const location = useLocation();
   const names = useOptionalNames();
 
-  const { holderDID, verifierDID } = useLoaderData<typeof loader>();
+  const { holderDID, verifierDID, authRequest, credential, authResponse, token, tokenDecoded } =
+    useLoaderData<typeof loader>();
 
   const actionData = useActionData<typeof action>();
 
@@ -293,7 +316,17 @@ export default function VerificationPage() {
     console.log("formAction:", formAction);
   }, [formAction]);
 
-  const zkpResponses = actionData?.authResponse?.body?.scope ?? [];
+  const proofVerificationRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    console.log("actionData.verifyAuthResponseResult:", actionData?.verifyAuthResponseResult);
+    console.log("proofVerificationRef:", proofVerificationRef);
+    if (formAction === "handleAuthResponse" && actionData?.verifyAuthResponseResult) {
+      proofVerificationRef.current?.scrollIntoView();
+    }
+  }, [formAction, actionData?.verifyAuthResponseResult, proofVerificationRef.current]);
+
+  const zkpResponses = authResponse?.body?.scope ?? [];
 
   return (
     <div className="px-4 py-4">
@@ -350,20 +383,20 @@ export default function VerificationPage() {
                   : "Present Auth Request"}
               </button>
             </Form>
-            {actionData?.authRequest && (
+            {authRequest && (
               <>
                 <br />
                 <p>Auth request message:</p>
                 <div className="border">
-                  <AuthRequestDescription message={actionData.authRequest} />
+                  <AuthRequestDescription message={authRequest} />
                 </div>
                 <br />
                 <p>As QR code:</p>
-                <QRCode value={JSON.stringify(actionData.authRequest)} size={300} />
+                <QRCode value={JSON.stringify(authRequest)} size={300} />
               </>
             )}
           </Section>
-          <Section title="5: Verifier Receives JWZ and Verifies Proof" className="mt-4 border">
+          <Section title="5: Verifier Receives JWZ and Verifies Proof" className="mt-4 border" ref={proofVerificationRef}>
             {actionData?.verifyAuthResponseResult && (
               <AuthResponseVerification result={actionData.verifyAuthResponseResult} />
             )}
@@ -392,16 +425,12 @@ export default function VerificationPage() {
           <Section title="2: Holder Scans Authorization Request" className="mt-4 border">
             <Form className="mt-2" method="post">
               <label>Click to scan QR code: </label>
-              {actionData?.authRequest && (
-                <input
-                  type="hidden"
-                  name="authRequest"
-                  value={JSON.stringify(actionData.authRequest)}
-                />
+              {authRequest && (
+                <input type="hidden" name="authRequest" value={JSON.stringify(authRequest)} />
               )}
               <button
                 className={buttonClassName}
-                disabled={!holderDID || !actionData?.authRequest}
+                disabled={!holderDID || !authRequest}
                 name="_action"
                 type="submit"
                 value="scanChallengeQR"
@@ -439,7 +468,7 @@ export default function VerificationPage() {
                     ))}
                     <button
                       className={buttonClassName + " mt-4"}
-                      disabled={!holderDID || !actionData?.authRequest}
+                      disabled={!holderDID || !authRequest}
                       name="_action"
                       type="submit"
                       value="generateProof"
@@ -449,26 +478,22 @@ export default function VerificationPage() {
                         : "Generate Proof(s)"}
                     </button>
                     {holderDID && <input type="hidden" name="holderDID" value={holderDID} />}
-                    {actionData?.authRequest && (
-                      <input
-                        type="hidden"
-                        name="authRequest"
-                        value={JSON.stringify(actionData.authRequest)}
-                      />
+                    {authRequest && (
+                      <input type="hidden" name="authRequest" value={JSON.stringify(authRequest)} />
                     )}
                   </>
                 )}
               </Form>
             )}
-            {actionData?.credential && (
+            {credential && (
               <>
                 <p>Selected credential:</p>
                 <div className="border">
-                  <CredentialDescription cred={actionData.credential as W3CCredential} />
+                  <CredentialDescription cred={credential as W3CCredential} />
                 </div>
               </>
             )}
-            {actionData?.authResponse && (
+            {authResponse && (
               <>
                 {zkpResponses.map((zkpResp, i) => (
                   <Fragment key={i}>
@@ -482,13 +507,13 @@ export default function VerificationPage() {
                 <br />
                 <p>Auth Response Message:</p>
                 <div className="border">
-                  <AuthResponseDescription message={actionData.authResponse} />
+                  <AuthResponseDescription message={authResponse} />
                 </div>
               </>
             )}
           </Section>
           <Section title="4: Holder Sends Response as JWZ Token" className="mt-4 border">
-            {actionData?.token && actionData?.tokenDecoded && (
+            {token && tokenDecoded && (
               <>
                 <p>
                   A JWZ token is a kind of JWT (JSON Web Token) containing three parts, in base-64
@@ -497,7 +522,7 @@ export default function VerificationPage() {
                 <br />
                 <p>JWZ headers:</p>
                 <div className="border">
-                  <ObjectGrid obj={actionData.tokenDecoded.headers} />
+                  <ObjectGrid obj={tokenDecoded.headers} />
                 </div>
                 <br />
                 <p>JWZ payload: (see Auth Response message above)</p>
@@ -505,12 +530,12 @@ export default function VerificationPage() {
                 <p>JWZ proof:</p>
                 <div className="mb-4 border">
                   <ZKProofDescription
-                    circuitId={actionData.tokenDecoded.headers?.circuitId}
-                    proof={actionData.tokenDecoded.zkProof}
+                    circuitId={tokenDecoded.headers?.circuitId}
+                    proof={tokenDecoded.zkProof}
                   />
                 </div>
                 <Form method="post">
-                  <input type="hidden" name="authToken" value={actionData.token} />
+                  <input type="hidden" name="authToken" value={token} />
                   <button
                     className={buttonClassName}
                     name="_action"
