@@ -23,24 +23,24 @@ export interface HolderThreadState {
 }
 
 declare global {
-  var __threadStates__: Map<string, HolderThreadState>;
+  var __holderThreadStates__: Map<string, HolderThreadState>;
 }
 
-if (!global.__threadStates__) {
-  global.__threadStates__ = new Map();
+if (!global.__holderThreadStates__) {
+  global.__holderThreadStates__ = new Map();
 }
 
-const threadStates = global.__threadStates__;
+const threadStates = global.__holderThreadStates__;
 
-export function clearThreadState(threadId: string) {
+export function clearHolderThreadState(threadId: string) {
   threadStates.delete(threadId);
 }
 
-export function getThreadState(threadId: string) {
+export function getHolderThreadState(threadId: string) {
   return threadStates.get(threadId);
 }
 
-function setThreadState(threadId: string, threadState: HolderThreadState) {
+function setHolderThreadState(threadId: string, threadState: HolderThreadState) {
   threadStates.set(threadId, threadState);
 }
 
@@ -85,7 +85,7 @@ export async function generateAuthResponse(
     zkProof: parsedToken.zkProof,
   };
 
-  setThreadState(authRequest.thid, {
+  setHolderThreadState(authRequest.thid, {
     selectedCredential: credential,
     authResponse: result.authResponse,
     token: result.token,

@@ -26,12 +26,17 @@ import { CredentialDescription } from "~/components/credential";
 import { ObjectGrid } from "~/components/object-grid";
 import { Section } from "~/components/section";
 import { ZKProofDescription } from "~/components/zk-proof";
-import { clearThreadState, generateAuthResponse, getThreadState } from "~/service/holder.server";
+import {
+  clearHolderThreadState,
+  generateAuthResponse,
+  getHolderThreadState,
+} from "~/service/holder.server";
 import { findMatchingCredentials, getDID } from "~/service/identity.server";
 import {
+  VerifyAuthResponseChecks,
   VerifyAuthResponseResult,
-  getAuthRequestForThread,
   getAuthRequestMessage,
+  getVerifierThreadState,
   verifyAuthResponse,
 } from "~/service/verifier.server";
 import { requireUserId } from "~/session.server";
@@ -40,14 +45,15 @@ import { useOptionalNames } from "~/utils";
 // import { UserTokenStatus, getUserTokenStatus, tokenContract } from "~/service/blockchain.server";
 
 interface VerificationLoaderData {
+  verifierDID: string;
   holderDID?: string;
-  verifierDID?: string;
+  challengeType?: ChallengeType;
   authRequest?: AuthorizationRequestMessage;
   credential?: W3CCredential;
   authResponse?: AuthorizationResponseMessage;
-  verifyAuthResponseResult?: VerifyAuthResponseResult;
-  token?: string
+  token?: string;
   tokenDecoded?: any;
+  verifierChecks?: VerifyAuthResponseChecks;
 }
 
 interface VerificationActionData {
@@ -75,24 +81,19 @@ export const loader = async ({
   const threadId = searchParams.get("thid");
   console.log("threadId:", threadId);
 
-  const holderThreadState = threadId ? getThreadState(threadId) : undefined;
+  const holderThreadState = threadId ? getHolderThreadState(threadId) : undefined;
+  const verifierThreadState = threadId ? getVerifierThreadState(threadId) : undefined;
+
   return json({
-    holderDID: getDID(userId, "holder")?.toString(),
     verifierDID: VERIFIER_DID.toString(),
-    authRequest: threadId ? getAuthRequestForThread(threadId) : undefined,
+    holderDID: getDID(userId, "holder")?.toString(),
+    challengeType: verifierThreadState?.challengeType,
+    authRequest: verifierThreadState?.authRequest,
     credential: holderThreadState?.selectedCredential,
     authResponse: holderThreadState?.authResponse,
     token: holderThreadState?.token,
     tokenDecoded: holderThreadState?.tokenDecoded,
-
-    // verifyAuthResponseResult: {
-    //   checks: {
-    //     tokenSyntax: true,
-    //     mediaTypeOk: false,
-    //     requestExists: undefined,
-    //   },
-    //   errors: [],
-    // },
+    verifierChecks: verifierThreadState?.verifierChecks,
   });
 };
 
@@ -126,7 +127,7 @@ export const action = async ({
 
     const authRequest = JSON.parse(authRequestJson) as AuthorizationRequestMessage;
     if (authRequest.thid) {
-      clearThreadState(authRequest.thid);
+      clearHolderThreadState(authRequest.thid);
     }
 
     const matchingCredentials = await findMatchingCredentials(userId, "holder", authRequest);
@@ -209,12 +210,12 @@ export const action = async ({
 const buttonClassName =
   "rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-600 focus:bg-blue-400 disabled:bg-blue-300";
 
-function AuthResponseVerification({ result }: { result: VerifyAuthResponseResult }) {
+function AuthResponseVerification({ checks, errors }: VerifyAuthResponseResult) {
   const symbol = (val?: boolean) => (val ? "✅" : val === false ? "❌" : "❓");
-  const { checks = {}, errors = [] } = result;
 
   return (
     <>
+      <div>Decoded payload: (see Auth Response Message at right).</div>
       <div>
         {errors.length === 0 ? "✅ Everything checks out!" : "❌ One or more checks failed."}
       </div>
@@ -297,8 +298,17 @@ export default function VerificationPage() {
   const location = useLocation();
   const names = useOptionalNames();
 
-  const { holderDID, verifierDID, authRequest, credential, authResponse, token, tokenDecoded } =
-    useLoaderData<typeof loader>();
+  const {
+    challengeType,
+    holderDID,
+    verifierDID,
+    authRequest,
+    credential,
+    authResponse,
+    token,
+    tokenDecoded,
+    verifierChecks,
+  } = useLoaderData<typeof loader>();
 
   const actionData = useActionData<typeof action>();
 
@@ -346,7 +356,7 @@ export default function VerificationPage() {
           <Section title="1: Verifier Presents Authorization Request" className="mt-4 border">
             <Form className="mt-2" method="post">
               <label>Choose request type: </label>
-              <select className="border" name="challengeType" required>
+              <select className="border" defaultValue={challengeType} name="challengeType" required>
                 <option value="" aria-required="false">
                   --Select an option--
                 </option>
@@ -396,9 +406,16 @@ export default function VerificationPage() {
               </>
             )}
           </Section>
-          <Section title="5: Verifier Receives JWZ and Verifies Proof" className="mt-4 border" ref={proofVerificationRef}>
-            {actionData?.verifyAuthResponseResult && (
-              <AuthResponseVerification result={actionData.verifyAuthResponseResult} />
+          <Section
+            title="5: Verifier Receives JWZ and Verifies Proof"
+            className="mt-4 border"
+            ref={proofVerificationRef}
+          >
+            {verifierChecks && (
+              <AuthResponseVerification
+                checks={verifierChecks}
+                errors={actionData?.verifyAuthResponseResult?.errors ?? []}
+              />
             )}
           </Section>
         </div>

@@ -28,43 +28,83 @@ const KYC_CONTEXT_URL =
 const PASSPORT_CONTEXT_URL =
   "https://raw.githubusercontent.com/nedgar/polygon-id-js-sdk-demo/main/schemas/json-ld/Passport-v1.json-ld";
 
+interface VerifierThreadState {
+  challengeType: ChallengeType;
+  authRequest: AuthorizationRequestMessage;
+  authResponse?: AuthorizationResponseMessage;
+  verifierChecks?: VerifyAuthResponseChecks;
+}
+
+declare global {
+  var __verifierThreadStates__: Map<string, VerifierThreadState>;
+}
+
+if (!global.__verifierThreadStates__) {
+  global.__verifierThreadStates__ = new Map();
+}
+
+const threadStates = global.__verifierThreadStates__;
+
+export function getVerifierThreadState(threadId: string) {
+  return threadStates.get(threadId);
+}
+
+function setVerifierThreadState(threadId: string, state: VerifierThreadState) {
+  return threadStates.set(threadId, state);
+}
+
 export function getAuthRequestMessage(verifierDID: string, challengeType: ChallengeType) {
+  let authRequest: AuthorizationRequestMessage;
+
   switch (challengeType) {
     case ChallengeType.FIN_AUM_OVER_THRESHOLD:
-      return getAuthRequest(
+      authRequest = getAuthRequest(
         verifierDID,
         "Verify total assets under management is over threshold.",
         ...getFinancialAUMRequests("$gt", "SGD", 200_000)
       );
+      break;
     case ChallengeType.FIN_DISCLOSE_BANK_ACCOUNT:
-      return getAuthRequest(verifierDID, "Verify bank account.", getFinancialBankAccountRequest());
+      authRequest = getAuthRequest(verifierDID, "Verify bank account.", getFinancialBankAccountRequest());
+      break;
     case ChallengeType.ID_PASSPORT_MATCHES:
-      return getAuthRequest(
+      authRequest = getAuthRequest(
         verifierDID,
         "Verify passport number matches and issuing country is not sanctioned.",
         ...getPassportMatchesRequests()
       );
+      break;
     case ChallengeType.KYC_COUNTRY_NOT_SANCTIONED:
-      return getAuthRequest(
+      authRequest = getAuthRequest(
         verifierDID,
         "Verify country of residence is not sanctioned.",
         getCountryNotSanctionedProofRequest()
       );
+      break;
     case ChallengeType.KYC_DISCLOSE_BIRTHDAY:
-      return getAuthRequest(
+      authRequest = getAuthRequest(
         verifierDID,
         "Disclose birthday (selective disclosure).",
         getDiscloseBirthdayRequest()
       );
+      break;
     case ChallengeType.KYC_USER_IS_ADULT:
-      return getAuthRequest(
+      authRequest = getAuthRequest(
         verifierDID,
         "Verify user is at least 21 years old.",
         getUserIsAdultProofRequest()
       );
+      break;
     default:
       throw new Error("Unsupported challenge type");
   }
+
+  setVerifierThreadState(authRequest.thid!, {
+    challengeType,
+    authRequest,
+  })
+
+  return authRequest;
 }
 
 const sanctionedCountries: Alpha2Code[] = [
@@ -227,31 +267,13 @@ function getUserIsAdultProofRequest(): ZeroKnowledgeProofRequest {
   };
 }
 
-declare global {
-  var __authRequests__: Map<string, AuthorizationRequestMessage>;
-}
-
-if (!global.__authRequests__) {
-  global.__authRequests__ = new Map();
-}
-
-const authRequests = global.__authRequests__;
-
-export function getAuthRequestForThread(threadId: string) {
-  return authRequests.get(threadId);
-}
-
-export function clearAuthRequestForThread(threadId: string): boolean {
-  return authRequests.delete(threadId);
-}
-
 function getAuthRequest(
   verifierDID: string,
   reason: string,
   ...proofRequests: ZeroKnowledgeProofRequest[]
-) {
+): AuthorizationRequestMessage {
   const threadId = randomUUID();
-  const authRequest: AuthorizationRequestMessage = {
+  return {
     id: threadId, // first message in thread normally has same ID as thread
     thid: threadId,
     typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
@@ -264,10 +286,6 @@ function getAuthRequest(
       reason,
     },
   };
-
-  authRequests.set(threadId, authRequest);
-
-  return authRequest;
 }
 
 class VerificationKeyLoader implements loaders.IKeyLoader {
@@ -298,8 +316,6 @@ export type VerifyAuthResponseChecks = {
 };
 
 export type VerifyAuthResponseResult = {
-  authRequest?: AuthorizationRequestMessage;
-  authResponse?: AuthorizationResponseMessage;
   checks: VerifyAuthResponseChecks;
   errors: string[];
 };
@@ -316,7 +332,6 @@ export async function verifyAuthResponse(authToken: string): Promise<VerifyAuthR
   const checks: VerifyAuthResponseChecks = {};
   const errors: string[] = [];
 
-  let authRequest: AuthorizationRequestMessage | undefined;
   let authResponse: AuthorizationResponseMessage | undefined;
 
   try {
@@ -336,9 +351,12 @@ export async function verifyAuthResponse(authToken: string): Promise<VerifyAuthR
       throw new Error("Missing thread ID");
     }
 
-    authRequest = getAuthRequestForThread(unpackedMessage.thid);
-    checks.requestExists = !!authRequest;
-    if (!authRequest) {
+    const threadState = getVerifierThreadState(unpackedMessage.thid);
+    if (!threadState) {
+      throw Error("Thread not found");
+    }
+    checks.requestExists = !!threadState.authRequest;
+    if (!checks.requestExists) {
       throw Error("No auth request found for thread ID");
     }
 
@@ -348,12 +366,18 @@ export async function verifyAuthResponse(authToken: string): Promise<VerifyAuthR
 
     await verifier.verifyAuthResponse(
       authResponse as protocol.AuthorizationResponseMessage,
-      authRequest as protocol.AuthorizationRequestMessage
+      threadState.authRequest as protocol.AuthorizationRequestMessage
     );
     checks.authVerified = true;
+
+    setVerifierThreadState(unpackedMessage.thid, {
+      ...threadState,
+      authResponse,
+      verifierChecks: checks
+    })
   } catch (err: any) {
     console.error("Error in verifyAuthResponse:", err);
     errors.push(err?.message ?? "Unknown error in verifyAuthResponse");
   }
-  return { authRequest, authResponse, checks, errors };
+  return { checks, errors };
 }
