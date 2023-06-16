@@ -1,5 +1,11 @@
-# See https://cloud.google.com/build/docs/build-push-docker-image
-# e.g. gcloud builds submit --region=europe-west1 --tag europe-west1-docker.pkg.dev/openhabour-11223/polygon-id-js-sdk-demo/v0.3-20230421-for-server:tag1
+# See https://cloud.google.com/build/docs/build-push-docker-image.
+#
+# To build:
+# gcloud builds submit --region=europe-west1 --tag "europe-west1-docker.pkg.dev/openhabour-11223/polygon-id-js-sdk-demo/v0.1.0:2023-06-15a"
+#
+# To deploy:
+# (update container image below to match)
+# kubectl apply -f k8s.yaml 
 ---
 apiVersion: "v1"
 kind: "Namespace"
@@ -47,7 +53,7 @@ spec:
       restartPolicy: Always
       containers:
         - name: "polygon-id-js-sdk-demo"
-          image: "europe-west1-docker.pkg.dev/openhabour-11223/polygon-id-js-sdk-demo/20230609b"
+          image: "europe-west1-docker.pkg.dev/openhabour-11223/polygon-id-js-sdk-demo/v0.1.0:2023-06-15a"
           env:
             - name: "SESSION_SECRET"
               valueFrom:
@@ -66,7 +72,8 @@ spec:
           #     restartPolicy: RestartContainer
           resources:
             limits:
-              cpu: "12"
-            requests:
               cpu: "4"
-              memory: "600Mi"
+              memory: "2Gi"
+            requests:
+              cpu: "2"
+              memory: "250Mi"
