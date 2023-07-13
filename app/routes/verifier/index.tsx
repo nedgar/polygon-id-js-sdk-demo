@@ -1,8 +1,10 @@
-import { LoaderArgs, TypedResponse, json } from "@remix-run/node";
+import type { LoaderArgs, TypedResponse } from "@remix-run/node";
+import { json } from "@remix-run/node";
 import { Link, useLoaderData } from "@remix-run/react";
-import { Section } from "~/components/section";
 
-import { VerifierThreadState, getUserDIDs, getUserThreads } from "~/service/verifier.server";
+import { Section } from "~/components/section";
+import type { VerifierThreadState } from "~/service/verifier.server";
+import { getUserDIDs, getUserThreads } from "~/service/verifier.server";
 
 interface VerifierUser {
   did: string;

@@ -1,4 +1,4 @@
-import { JSONObject } from "@0xpolygonid/js-sdk";
+import type { JSONObject } from "@0xpolygonid/js-sdk";
 
 import { getAlpha3CountryCode } from "./countries";
 import { getAlphaCurrencyCode } from "./currencies";

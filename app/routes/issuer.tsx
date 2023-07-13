@@ -7,12 +7,11 @@ import invariant from "tiny-invariant";
 import { CredentialDescription } from "~/components/credential";
 import { Section } from "~/components/section";
 
+import type { KeyData } from "~/service/identity.server";
 import {
-  KeyData,
   createKey,
   getKeyData,
   getAuthCredential,
-  getStats,
   getIssuedCredentials,
 } from "~/service/identity.server";
 import { createIdentity } from "~/service/identity.server";
@@ -53,7 +52,7 @@ export const action = async ({
   const userId = await requireUserId(request);
 
   // console.log("before action:", await getStats());
-  const { _action, ...values } = Object.fromEntries(await request.formData());
+  const { _action } = Object.fromEntries(await request.formData());
   switch (_action) {
     case "newRandomKey":
       await createKey(userId, ISSUER_ALIAS);

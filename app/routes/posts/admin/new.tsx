@@ -1,4 +1,5 @@
-import { ActionArgs, json, redirect } from "@remix-run/node";
+import type { ActionArgs } from "@remix-run/node";
+import { json, redirect } from "@remix-run/node";
 import { Form, useActionData, useNavigation } from "@remix-run/react";
 import invariant from "tiny-invariant";
 

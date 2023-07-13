@@ -1,19 +1,21 @@
-import {
+import type {
   AuthorizationRequestMessage,
   AuthorizationResponseMessage,
   CircuitId,
-  ICircuitStorage,
+  ICircuitStorage
+} from "@0xpolygonid/js-sdk";
+import {
   PROTOCOL_CONSTANTS
 } from "@0xpolygonid/js-sdk";
-import { auth, loaders, protocol, resolver } from "@iden3/js-iden3-auth";
-
-import { ChallengeType } from "~/shared/challenge-type";
+import type { loaders, protocol } from "@iden3/js-iden3-auth";
+import { auth, resolver } from "@iden3/js-iden3-auth";
 
 import config from "~/config.server";
+import type { ChallengeType } from "~/shared/challenge-type";
+import { getAuthRequest } from "./auth-requests";
 import { getCircuitStorage } from "./circuits.server";
 import { credentialWallet, dataStorage, identityWallet } from "./identity.server";
 import { initServices } from "./services.server";
-import { getAuthRequest } from "./auth-requests";
 
 export const VERIFIER_DID =
   "did:polygonid:polygon:mumbai:2qMFtSnvRGKFDVY5MawZENXv6eAQnGgKTNwid1wJoG";
@@ -80,7 +82,7 @@ async function getAuthVerifier() {
 
   const ethStateResolver = new resolver.EthStateResolver(config.rpcUrl, config.contractAddress);
   const resolvers: resolver.Resolvers = {
-    ["polygon:mumbai"]: ethStateResolver,
+    "polygon:mumbai": ethStateResolver, // TODO: allow multiple blockchain / network resolvers
   };
   return auth.Verifier.newVerifier(verificationKeyloader, resolvers);
 }

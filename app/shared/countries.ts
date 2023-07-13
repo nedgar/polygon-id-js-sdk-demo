@@ -1,4 +1,5 @@
-import { Alpha2Code, alpha2ToNumeric, numericToAlpha3 } from "i18n-iso-countries";
+import type { Alpha2Code } from "i18n-iso-countries";
+import { alpha2ToNumeric, numericToAlpha3 } from "i18n-iso-countries";
 import invariant from "tiny-invariant";
 
 export function getNumericCountryCode(alpha2: Alpha2Code): number {

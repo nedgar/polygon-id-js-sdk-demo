@@ -3,8 +3,8 @@ import type {
   AuthorizationResponseMessage,
   W3CCredential
 } from "@0xpolygonid/js-sdk";
-// import { ethers, AlchemyProvider } from "ethers";
-import { ActionArgs, LoaderArgs, TypedResponse, json, redirect } from "@remix-run/node";
+import type { ActionArgs, LoaderArgs, TypedResponse} from "@remix-run/node";
+import { json, redirect } from "@remix-run/node";
 import {
   Form,
   Link,
@@ -29,10 +29,12 @@ import {
   getHolderThreadState,
 } from "~/service/holder.server";
 import { findMatchingCredentials, getDID } from "~/service/identity.server";
+import type {
+  VerifyAuthResponseChecks,
+  VerifyAuthResponseResult
+} from "~/service/verifier.server";
 import {
   VERIFIER_DID,
-  VerifyAuthResponseChecks,
-  VerifyAuthResponseResult,
   getAuthRequestMessage,
   getVerifierThreadState,
   verifyAuthResponse,
@@ -41,7 +43,6 @@ import { requireUserId } from "~/session.server";
 import { ChallengeType } from "~/shared/challenge-type";
 import { boolToSymbol } from "~/shared/formatting";
 import { useOptionalNames } from "~/utils";
-// import { UserTokenStatus, getUserTokenStatus, tokenContract } from "~/service/blockchain.server";
 
 interface VerificationLoaderData {
   verifierDID: string;
@@ -329,7 +330,7 @@ export default function VerificationPage() {
     if (formAction === "handleAuthResponse" && actionData?.verifyAuthResponseResult) {
       proofVerificationRef.current?.scrollIntoView();
     }
-  }, [formAction, actionData?.verifyAuthResponseResult, proofVerificationRef.current]);
+  }, [formAction, actionData?.verifyAuthResponseResult, proofVerificationRef]);
 
   const zkpResponses = authResponse?.body?.scope ?? [];
 
@@ -352,7 +353,7 @@ export default function VerificationPage() {
             <Form className="mt-2" method="post">
               <label>Choose request type: </label>
               <select className="border" defaultValue={challengeType} name="challengeType" required>
-                <option value="" aria-required="false">
+                <option value="">
                   --Select an option--
                 </option>
                 <option value={ChallengeType.FIN_DISCLOSE_BANK_ACCOUNT}>

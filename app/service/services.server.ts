@@ -1,22 +1,24 @@
-import {
+import type {
   AuthDataPrepareFunc,
-  AuthHandler,
   CircuitData,
-  CircuitId,
-  DataPrepareHandlerFunc,
   IAuthHandler,
   ICredentialWallet,
   IIdentityWallet,
   IPackageManager,
   IProofService,
   IStateStorage,
+  ProvingParams,
+  StateVerificationFunc,
+  VerificationParams
+} from "@0xpolygonid/js-sdk";
+import {
+  AuthHandler,
+  CircuitId,
+  DataPrepareHandlerFunc,
   PackageManager,
   PlainPacker,
   ProofService,
-  ProvingParams,
-  StateVerificationFunc,
   VerificationHandlerFunc,
-  VerificationParams,
   ZKPPacker,
 } from "@0xpolygonid/js-sdk";
 import { proving } from "@iden3/js-jwz";

@@ -1,5 +1,15 @@
-import {
+import type {
   AuthorizationRequestMessage,
+  EthConnectionConfig,
+  ICredentialWallet,
+  IDataStorage,
+  Identity,
+  IIdentityWallet,
+  KmsKeyId,
+  Profile,
+  W3CCredential
+} from "@0xpolygonid/js-sdk";
+import {
   BjjProvider,
   core,
   CredentialStatusResolverRegistry,
@@ -7,35 +17,25 @@ import {
   CredentialStorage,
   CredentialWallet,
   defaultEthConnectionConfig,
-  EthConnectionConfig,
   EthStateStorage,
-  ICredentialWallet,
-  IDataStorage,
-  Identity,
   IdentityStorage,
   IdentityWallet,
-  IIdentityWallet,
   InMemoryDataSource,
   InMemoryMerkleTreeStorage,
   InMemoryPrivateKeyStore,
   IssuerResolver,
   KMS,
-  KmsKeyId,
   KmsKeyType,
   OnChainResolver,
-  Profile,
-  RHSResolver,
-  W3CCredential,
+  RHSResolver
 } from "@0xpolygonid/js-sdk";
-
-import { PublicKey } from "@iden3/js-crypto";
-import { BytesHelper, DID } from "@iden3/js-iden3-core";
+import type { PublicKey } from "@iden3/js-crypto";
+import type { DID } from "@iden3/js-iden3-core";
+import { BytesHelper } from "@iden3/js-iden3-core";
 import { randomBytes } from "crypto";
 import invariant from "tiny-invariant";
 
 import config from "~/config.server";
-
-const HOST_URL = "http://wallet.example.org/"; // URL to use for credential identifiers
 
 const { contractAddress: stateContractAddress, rhsUrl, rpcUrl } = config;
 
@@ -144,7 +144,7 @@ function setIdentityData(userId: string, alias: string, idData: IdentityData) {
 export async function createKey(userId: string, alias: string) {
   const seed = Uint8Array.from(randomBytes(32));
   const keyId = await kms.createKeyFromSeed(KmsKeyType.BabyJubJub, seed);
-  const _idData = setIdentityData(userId, alias, {
+  setIdentityData(userId, alias, {
     seed,
     keyId,
   });

@@ -1,12 +1,14 @@
-import { LoaderArgs, TypedResponse, json } from "@remix-run/node";
+import type { LoaderArgs, TypedResponse } from "@remix-run/node";
+import { json } from "@remix-run/node";
 import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
 import { AuthResponseDescription } from "~/components/auth-response";
 import { ObjectGrid } from "~/components/object-grid";
 import { Section } from "~/components/section";
 import { ZKProofDescription } from "~/components/zk-proof";
-import { Permission, getAvailablePermissions } from "~/service/permissions.server";
-
-import { VerifierThreadState, getUserDIDs, getUserThreads } from "~/service/verifier.server";
+import type { Permission } from "~/service/permissions.server";
+import { getAvailablePermissions } from "~/service/permissions.server";
+import type { VerifierThreadState } from "~/service/verifier.server";
+import { getUserDIDs, getUserThreads } from "~/service/verifier.server";
 import { boolToSymbol } from "~/shared/formatting";
 
 interface VerifierUser {
@@ -81,7 +83,7 @@ export default function Verifier() {
             {(threads ?? [])
               .sort((a, b) => (a.challengeType ?? "").localeCompare(b.challengeType ?? ""))
               .map((thread) => (
-                <li id={thread.authRequest.thid}>
+                <li key={thread.authRequest.thid}>
                   <Link
                     to={`?${otherParams.toString()}&did=${did}&thid=${thread.authRequest.thid}`}
                     className="text-blue-600 underline"
@@ -105,8 +107,8 @@ export default function Verifier() {
               <>
                 <AuthResponseDescription message={thread.authResponse} />
                 {(thread.authResponse.body?.scope || []).map((proof, i) => (
-                  <Section title={`Proof ${i+1}:`}>
-                  <ZKProofDescription key={proof.id} proof={proof} />
+                  <Section key={i} title={`Proof ${i+1}:`}>
+                    <ZKProofDescription key={proof.id} proof={proof} />
                   </Section>
                 ))}
               </>

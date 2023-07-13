@@ -1,5 +1,7 @@
-import { CircuitId, ZeroKnowledgeProofRequest } from "@0xpolygonid/js-sdk";
-import { Alpha2Code } from "i18n-iso-countries";
+import type { ZeroKnowledgeProofRequest } from "@0xpolygonid/js-sdk";
+import { CircuitId } from "@0xpolygonid/js-sdk";
+import type { Alpha2Code } from "i18n-iso-countries";
+
 import { getNumericCountryCode } from "~/shared/countries";
 import { getNumericCurrencyCode } from "~/shared/currencies";
 

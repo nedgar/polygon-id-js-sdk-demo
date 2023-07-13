@@ -1,9 +1,11 @@
-import { LoaderArgs, TypedResponse, json } from "@remix-run/node";
-import { Outlet, useLoaderData } from "@remix-run/react";
+import type { LoaderArgs, TypedResponse } from "@remix-run/node";
+import { json } from "@remix-run/node";
+import { useLoaderData } from "@remix-run/react";
 import invariant from "tiny-invariant";
-import { Section } from "~/components/section";
 
-import { VerifierThreadState, getUserDIDs, getUserThreads } from "~/service/verifier.server";
+import { Section } from "~/components/section";
+import type { VerifierThreadState } from "~/service/verifier.server";
+import { getUserThreads } from "~/service/verifier.server";
 
 interface LoaderData {
   did: string
@@ -32,7 +34,7 @@ export default function VerifierUsers() {
       <p>Threads:</p>
       <ul>
         {threads.map((thread) => (
-          <li id={thread.authRequest.thid}>{thread.authRequest.thid}: (type: {thread.challengeType})</li>
+          <li key={thread.authRequest.thid}>{thread.authRequest.thid}: (type: {thread.challengeType})</li>
         ))}
       </ul>
     </Section>

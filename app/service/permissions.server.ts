@@ -1,7 +1,7 @@
 import invariant from "tiny-invariant";
 import { ChallengeType } from "~/shared/challenge-type";
 import { getRequiredProofIdsForChallenge } from "./auth-requests";
-import { ProofRequestId } from "./proof-requests";
+import type { ProofRequestId } from "./proof-requests";
 
 export enum PermissionId {
   CAN_OPEN_NEW_ACCOUNT = "CAN_OPEN_NEW_ACCOUNT",
