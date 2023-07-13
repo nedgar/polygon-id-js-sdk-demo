@@ -2,6 +2,7 @@ import {
   AuthorizationRequestMessage,
   BjjProvider,
   core,
+  CredentialStatusResolverRegistry,
   CredentialStatusType,
   CredentialStorage,
   CredentialWallet,
@@ -17,10 +18,13 @@ import {
   InMemoryDataSource,
   InMemoryMerkleTreeStorage,
   InMemoryPrivateKeyStore,
+  IssuerResolver,
   KMS,
   KmsKeyId,
   KmsKeyType,
+  OnChainResolver,
   Profile,
+  RHSResolver,
   W3CCredential,
 } from "@0xpolygonid/js-sdk";
 
@@ -34,6 +38,13 @@ import config from "~/config.server";
 const HOST_URL = "http://wallet.example.org/"; // URL to use for credential identifiers
 
 const { contractAddress: stateContractAddress, rhsUrl, rpcUrl } = config;
+
+// JSON RPC connection config
+const ethConnectionConfig: EthConnectionConfig = {
+  ...defaultEthConnectionConfig,
+  contractAddress: stateContractAddress,
+  url: rpcUrl,
+};
 
 interface IdentityData {
   seed: Uint8Array;
@@ -62,13 +73,6 @@ if (!global.__dataStorage__) {
   const mtDepth = 40;
   const mtStorage = new InMemoryMerkleTreeStorage(mtDepth);
 
-  // JSON RPC connection config
-  const ethConnectionConfig: EthConnectionConfig = {
-    ...defaultEthConnectionConfig,
-    contractAddress: stateContractAddress,
-    url: rpcUrl,
-  };
-
   // on-chain storage for ID states and corresponding MT roots for:
   // - claims tree
   // - revocations tree
@@ -96,7 +100,21 @@ export const dataStorage = global.__dataStorage__;
 export const kms = global.__kms__;
 
 // credential wallet
-export const credentialWallet: ICredentialWallet = new CredentialWallet(dataStorage);
+const resolvers = new CredentialStatusResolverRegistry();
+resolvers.register(
+    CredentialStatusType.SparseMerkleTreeProof,
+    new IssuerResolver()
+);
+resolvers.register(
+    CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+    new RHSResolver(dataStorage.states)
+);
+resolvers.register(
+    CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
+    new OnChainResolver([ethConnectionConfig])
+);
+
+export const credentialWallet: ICredentialWallet = new CredentialWallet(dataStorage, resolvers);
 
 // identity wallet
 export const identityWallet: IIdentityWallet = new IdentityWallet(
@@ -180,7 +198,7 @@ export async function createIdentity(userId: string, alias: string) {
     blockchain: core.Blockchain.Polygon,
     networkId: core.NetworkId.Mumbai,
     revocationOpts: {
-      baseUrl: rhsUrl,
+      id: rhsUrl,
       type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
     },
     seed: idData.seed,

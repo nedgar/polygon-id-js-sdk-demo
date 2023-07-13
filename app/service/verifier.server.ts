@@ -77,13 +77,12 @@ class VerificationKeyLoader implements loaders.IKeyLoader {
 
 async function getAuthVerifier() {
   const verificationKeyloader = new VerificationKeyLoader(await getCircuitStorage());
-  const schemaLoader = new loaders.UniversalSchemaLoader("ipfs.io");
 
   const ethStateResolver = new resolver.EthStateResolver(config.rpcUrl, config.contractAddress);
   const resolvers: resolver.Resolvers = {
     ["polygon:mumbai"]: ethStateResolver,
   };
-  return new auth.Verifier(verificationKeyloader, schemaLoader, resolvers);
+  return auth.Verifier.newVerifier(verificationKeyloader, resolvers);
 }
 
 export type VerifyAuthResponseChecks = {

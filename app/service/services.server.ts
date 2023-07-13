@@ -1,21 +1,18 @@
 import {
+  AuthDataPrepareFunc,
   AuthHandler,
   CircuitData,
   CircuitId,
+  DataPrepareHandlerFunc,
   IAuthHandler,
   ICredentialWallet,
   IIdentityWallet,
+  IPackageManager,
   IProofService,
   IStateStorage,
-  ProofService,
-} from "@0xpolygonid/js-sdk";
-
-import {
-  AuthDataPrepareFunc,
-  DataPrepareHandlerFunc,
-  IPackageManager,
   PackageManager,
   PlainPacker,
+  ProofService,
   ProvingParams,
   StateVerificationFunc,
   VerificationHandlerFunc,
@@ -23,6 +20,7 @@ import {
   ZKPPacker,
 } from "@0xpolygonid/js-sdk";
 import { proving } from "@iden3/js-jwz";
+
 import { getCircuitStorage } from "./circuits.server";
 
 function initPackageManager(
@@ -66,7 +64,8 @@ export async function initServices(
     identityWallet,
     credentialWallet,
     circuitStorage,
-    stateStorage
+    stateStorage,
+    { ipfsNodeURL: "https://ipfs.io" }
   );
 
   const authCircuitData = await circuitStorage.loadCircuitData(CircuitId.AuthV2);

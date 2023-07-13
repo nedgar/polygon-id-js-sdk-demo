@@ -146,7 +146,7 @@ export async function issueCredential(
   const credential = await identityWallet.issueCredential(issuerDID, {
     ...req,
     revocationOpts: {
-      baseUrl: config.rhsUrl,
+      id: config.rhsUrl,
       type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
     },
   } as CredentialRequest);
