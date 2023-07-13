@@ -7,8 +7,8 @@ interface Props {
 
 export function AuthResponseDescription({ message }: Props) {
   const obj = {
-    "Message ID": message.id,
     "Thread ID": message.thid,
+    "Message ID": message.id,
     Type: message.type,
     From: message.from,
     To: message.to,

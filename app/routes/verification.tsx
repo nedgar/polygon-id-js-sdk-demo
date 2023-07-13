@@ -1,12 +1,10 @@
 import type {
   AuthorizationRequestMessage,
   AuthorizationResponseMessage,
-  JSONObject,
-  W3CCredential,
+  W3CCredential
 } from "@0xpolygonid/js-sdk";
 // import { ethers, AlchemyProvider } from "ethers";
-import { ActionArgs, LoaderArgs, TypedResponse, redirect } from "@remix-run/node";
-import { json } from "@remix-run/node";
+import { ActionArgs, LoaderArgs, TypedResponse, json, redirect } from "@remix-run/node";
 import {
   Form,
   Link,
@@ -15,7 +13,6 @@ import {
   useLocation,
   useNavigation,
 } from "@remix-run/react";
-import { ReactElement } from "react";
 import { Fragment, useEffect, useRef } from "react";
 import QRCode from "react-qr-code";
 import invariant from "tiny-invariant";
@@ -33,6 +30,7 @@ import {
 } from "~/service/holder.server";
 import { findMatchingCredentials, getDID } from "~/service/identity.server";
 import {
+  VERIFIER_DID,
   VerifyAuthResponseChecks,
   VerifyAuthResponseResult,
   getAuthRequestMessage,
@@ -41,6 +39,7 @@ import {
 } from "~/service/verifier.server";
 import { requireUserId } from "~/session.server";
 import { ChallengeType } from "~/shared/challenge-type";
+import { boolToSymbol } from "~/shared/formatting";
 import { useOptionalNames } from "~/utils";
 // import { UserTokenStatus, getUserTokenStatus, tokenContract } from "~/service/blockchain.server";
 
@@ -68,8 +67,6 @@ interface VerificationActionData {
   error?: string;
 }
 
-const VERIFIER_DID = "did:polygonid:polygon:mumbai:2qMFtSnvRGKFDVY5MawZENXv6eAQnGgKTNwid1wJoG";
-
 export const meta = () => [{ title: "Verification - Polygon ID JS SDK Demo" }];
 
 export const loader = async ({
@@ -85,7 +82,7 @@ export const loader = async ({
   const verifierThreadState = threadId ? getVerifierThreadState(threadId) : undefined;
 
   return json({
-    verifierDID: VERIFIER_DID.toString(),
+    verifierDID: VERIFIER_DID,
     holderDID: getDID(userId, "holder")?.toString(),
     challengeType: verifierThreadState?.challengeType,
     authRequest: verifierThreadState?.authRequest,
@@ -211,8 +208,6 @@ const buttonClassName =
   "rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-600 focus:bg-blue-400 disabled:bg-blue-300";
 
 function AuthResponseVerification({ checks, errors }: VerifyAuthResponseResult) {
-  const symbol = (val?: boolean) => (val ? "✅" : val === false ? "❌" : "❓");
-
   return (
     <>
       <div>Decoded payload: (see Auth Response Message at right).</div>
@@ -222,11 +217,11 @@ function AuthResponseVerification({ checks, errors }: VerifyAuthResponseResult) 
       <div className="mt-2">
         <p>Checks:</p>
         <ul className="ml-4 list-inside list-disc">
-          <li>JWZ token syntax is valid: {symbol(checks.tokenSyntax)}</li>
-          <li>response media type is Iden3 ZKP: {symbol(checks.mediaType)}</li>
+          <li>JWZ token syntax is valid: {boolToSymbol(checks.tokenSyntax)}</li>
+          <li>response media type is Iden3 ZKP: {boolToSymbol(checks.mediaType)}</li>
           <li>payload signature is valid (signed by user, no tampering)</li>
-          <li>a matching request exists (same ID and schema): {symbol(checks.requestExists)}</li>
-          <li>ZKP of credential claim is satisfied: {symbol(checks.authVerified)}</li>
+          <li>a matching request exists (same ID and schema): {boolToSymbol(checks.requestExists)}</li>
+          <li>ZKP of credential claim is satisfied: {boolToSymbol(checks.authVerified)}</li>
           <ul className="ml-4 list-inside list-disc">
             <li>user is the claim's subject</li>
             <li>claim schema matches request</li>

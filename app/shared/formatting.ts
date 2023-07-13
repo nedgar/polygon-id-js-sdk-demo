@@ -70,3 +70,5 @@ export function formatId(s: string) {
 export function toHex(s: string) {
   return `0x${BigInt(s).toString(16)}`;
 }
+
+export const boolToSymbol = (val?: boolean) => (val ? "✅" : val === false ? "❌" : "❓");
