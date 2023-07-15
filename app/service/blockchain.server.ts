@@ -1,9 +1,6 @@
-import { EthStateStorage } from "@0xpolygonid/js-sdk";
-import { ethers, JsonRpcProvider, Wallet } from "ethers";
+import { ethers } from "ethers";
 
 import { abi as PermissionedERC20ABI } from "~/contracts/abis/PermissionedERC20.json";
-
-import { dataStorage } from "./identity.server";
 
 export enum Role {
   PARTICIPANT = "participant",
@@ -16,7 +13,7 @@ export interface UserTokenStatus {
 }
 
 // const provider = (dataStorage.states as EthStateStorage).provider;
-const provider = new JsonRpcProvider("http://127.0.0.1:8545");
+const provider = new ethers.providers.JsonRpcProvider("http://127.0.0.1:8545");
 
 // const wallet = new Wallet("ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80", provider);
 // wallet.getAddress().then(addr => console.log("wallet address:", addr));

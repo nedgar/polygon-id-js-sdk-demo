@@ -1,4 +1,4 @@
-import type { AuthorizationRequestMessage, JSONObject } from "@0xpolygonid/js-sdk";
+import type { AuthorizationRequestMessage } from "@0xpolygonid/js-sdk";
 import { Fragment } from "react";
 
 import { formatQuerySubject } from "~/shared/formatting";

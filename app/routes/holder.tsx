@@ -9,19 +9,18 @@ import {
   useLocation,
   useNavigation,
 } from "@remix-run/react";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import invariant from "tiny-invariant";
 
 import { CredentialDescription } from "~/components/credential";
 import { Section } from "~/components/section";
+import type { KeyData } from "~/service/identity.server";
 import {
-  KeyData,
   createIdentity,
   createKey,
   getAuthCredential,
   getDID,
   getKeyData,
-  getStats,
   getSubjectCredentials,
 } from "~/service/identity.server";
 import { requestCredential } from "~/service/issuer.server";

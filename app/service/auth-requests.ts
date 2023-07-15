@@ -1,13 +1,13 @@
-import {
+import type {
   AuthorizationRequestMessage,
-  PROTOCOL_CONSTANTS,
-  ZeroKnowledgeProofRequest,
+  ZeroKnowledgeProofRequest
 } from "@0xpolygonid/js-sdk";
+import { PROTOCOL_CONSTANTS } from "@0xpolygonid/js-sdk";
 import { randomUUID } from "crypto";
 
 import { ChallengeType } from "~/shared/challenge-type";
+import type { ProofRequestId } from "./proof-requests";
 import {
-    ProofRequestId,
   getCountryNotSanctionedProofRequest,
   getDiscloseBirthdayRequest,
   getFinancialAUMRequests,

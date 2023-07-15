@@ -1,5 +1,5 @@
 {
-  "name": "blog-tutorial-9ac7",
+  "name": "polygon-id-js-sdk-demo",
   "version": "0.1.0",
   "private": true,
   "sideEffects": false,
@@ -33,8 +33,8 @@
     "/public/build"
   ],
   "dependencies": {
-    "@0xpolygonid/js-sdk": "^1.0.0-beta.7",
-    "@iden3/js-iden3-auth": "^1.0.0-beta.7",
+    "@0xpolygonid/js-sdk": "^1.0.0-beta.18",
+    "@iden3/js-iden3-auth": "^1.0.0-beta.13",
     "@prisma/client": "^4.11.0",
     "@remix-run/node": "^1.14.3",
     "@remix-run/react": "^1.14.3",
@@ -42,7 +42,7 @@
     "@remix-run/server-runtime": "^1.14.3",
     "bcryptjs": "^2.4.3",
     "currency-codes": "^2.1.0",
-    "ethers": "^6.3.0",
+    "ethers": "^5.7.2",
     "i18n-iso-countries": "^7.5.0",
     "isbot": "^3.6.7",
     "marked": "^4.3.0",
@@ -96,9 +96,9 @@
   "overrides": {
     "@iden3/js-crypto": "1.0.0-beta.1",
     "@iden3/js-iden3-core": "1.0.0-beta.2",
-    "@iden3/js-jsonld-merklization": "1.0.0-beta.7",
+    "@iden3/js-jsonld-merklization": "1.0.0-beta.16",
     "@iden3/js-jwz": "1.0.0-beta.2",
-    "@iden3/js-merkletree": "1.0.0-beta.2",
+    "@iden3/js-merkletree": "1.0.0-beta.5",
     "snarkjs": "0.5.0"
   },
   "engines": {

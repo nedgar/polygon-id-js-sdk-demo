@@ -1,5 +1,5 @@
 import { Response } from "@remix-run/node";
-import { LoaderArgs } from "@remix-run/server-runtime";
+import type { LoaderArgs } from "@remix-run/server-runtime";
 import * as os from "os";
 
 export async function loader({ request }: LoaderArgs) {

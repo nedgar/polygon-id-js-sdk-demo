@@ -1,5 +1,6 @@
-import { CredentialRequest, CredentialStatusType } from "@0xpolygonid/js-sdk";
-import { DID } from "@iden3/js-iden3-core";
+import type { CredentialRequest} from "@0xpolygonid/js-sdk";
+import { CredentialStatusType } from "@0xpolygonid/js-sdk";
+import type { DID } from "@iden3/js-iden3-core";
 import invariant from "tiny-invariant";
 
 import config from "~/config.server";
@@ -146,7 +147,7 @@ export async function issueCredential(
   const credential = await identityWallet.issueCredential(issuerDID, {
     ...req,
     revocationOpts: {
-      baseUrl: config.rhsUrl,
+      id: config.rhsUrl,
       type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
     },
   } as CredentialRequest);

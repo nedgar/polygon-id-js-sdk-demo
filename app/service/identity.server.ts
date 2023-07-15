@@ -1,39 +1,50 @@
-import {
+import type {
   AuthorizationRequestMessage,
+  EthConnectionConfig,
+  ICredentialWallet,
+  IDataStorage,
+  Identity,
+  IIdentityWallet,
+  KmsKeyId,
+  Profile,
+  W3CCredential
+} from "@0xpolygonid/js-sdk";
+import {
   BjjProvider,
   core,
+  CredentialStatusResolverRegistry,
   CredentialStatusType,
   CredentialStorage,
   CredentialWallet,
   defaultEthConnectionConfig,
-  EthConnectionConfig,
   EthStateStorage,
-  ICredentialWallet,
-  IDataStorage,
-  Identity,
   IdentityStorage,
   IdentityWallet,
-  IIdentityWallet,
   InMemoryDataSource,
   InMemoryMerkleTreeStorage,
   InMemoryPrivateKeyStore,
+  IssuerResolver,
   KMS,
-  KmsKeyId,
   KmsKeyType,
-  Profile,
-  W3CCredential,
+  OnChainResolver,
+  RHSResolver
 } from "@0xpolygonid/js-sdk";
-
-import { PublicKey } from "@iden3/js-crypto";
-import { BytesHelper, DID } from "@iden3/js-iden3-core";
+import type { PublicKey } from "@iden3/js-crypto";
+import type { DID } from "@iden3/js-iden3-core";
+import { BytesHelper } from "@iden3/js-iden3-core";
 import { randomBytes } from "crypto";
 import invariant from "tiny-invariant";
 
 import config from "~/config.server";
 
-const HOST_URL = "http://wallet.example.org/"; // URL to use for credential identifiers
-
 const { contractAddress: stateContractAddress, rhsUrl, rpcUrl } = config;
+
+// JSON RPC connection config
+const ethConnectionConfig: EthConnectionConfig = {
+  ...defaultEthConnectionConfig,
+  contractAddress: stateContractAddress,
+  url: rpcUrl,
+};
 
 interface IdentityData {
   seed: Uint8Array;
@@ -62,13 +73,6 @@ if (!global.__dataStorage__) {
   const mtDepth = 40;
   const mtStorage = new InMemoryMerkleTreeStorage(mtDepth);
 
-  // JSON RPC connection config
-  const ethConnectionConfig: EthConnectionConfig = {
-    ...defaultEthConnectionConfig,
-    contractAddress: stateContractAddress,
-    url: rpcUrl,
-  };
-
   // on-chain storage for ID states and corresponding MT roots for:
   // - claims tree
   // - revocations tree
@@ -96,7 +100,21 @@ export const dataStorage = global.__dataStorage__;
 export const kms = global.__kms__;
 
 // credential wallet
-export const credentialWallet: ICredentialWallet = new CredentialWallet(dataStorage);
+const resolvers = new CredentialStatusResolverRegistry();
+resolvers.register(
+    CredentialStatusType.SparseMerkleTreeProof,
+    new IssuerResolver()
+);
+resolvers.register(
+    CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+    new RHSResolver(dataStorage.states)
+);
+resolvers.register(
+    CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
+    new OnChainResolver([ethConnectionConfig])
+);
+
+export const credentialWallet: ICredentialWallet = new CredentialWallet(dataStorage, resolvers);
 
 // identity wallet
 export const identityWallet: IIdentityWallet = new IdentityWallet(
@@ -126,7 +144,7 @@ function setIdentityData(userId: string, alias: string, idData: IdentityData) {
 export async function createKey(userId: string, alias: string) {
   const seed = Uint8Array.from(randomBytes(32));
   const keyId = await kms.createKeyFromSeed(KmsKeyType.BabyJubJub, seed);
-  const _idData = setIdentityData(userId, alias, {
+  setIdentityData(userId, alias, {
     seed,
     keyId,
   });
@@ -180,7 +198,7 @@ export async function createIdentity(userId: string, alias: string) {
     blockchain: core.Blockchain.Polygon,
     networkId: core.NetworkId.Mumbai,
     revocationOpts: {
-      baseUrl: rhsUrl,
+      id: rhsUrl,
       type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
     },
     seed: idData.seed,

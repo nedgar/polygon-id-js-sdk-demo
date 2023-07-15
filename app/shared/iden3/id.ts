@@ -1,7 +1,8 @@
-const base58Js = require("base58-js");
 import { BytesHelper } from "./byteshelper";
 import { Constants } from "./constants";
-import { fromLittleEndian, toLittleEndian } from "./utils";
+import { fromLittleEndian } from "./utils";
+
+const base58Js = require("base58-js");
 
 export class Id {
   private readonly _bytes: Uint8Array;

@@ -1,9 +1,11 @@
-import {
+import type {
   CircuitData,
+  ICircuitStorage
+} from "@0xpolygonid/js-sdk";
+import {
   CircuitId,
   CircuitStorage,
   FSKeyLoader,
-  ICircuitStorage,
   InMemoryDataSource,
 } from "@0xpolygonid/js-sdk";
 import path from "path";
