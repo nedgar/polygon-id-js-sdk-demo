@@ -1,4 +1,4 @@
-name: 🚀 Deploy
+name: 🚀 Build and Test
 on:
   push:
     branches:
@@ -148,18 +148,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
-      - name: 🔑 Fly Registry Auth
-        uses: docker/login-action@v2
-        with:
-          registry: registry.fly.io
-          username: x
-          password: ${{ secrets.FLY_API_TOKEN }}
+      # - name: 🔑 Fly Registry Auth
+      #   uses: docker/login-action@v2
+      #   with:
+      #     registry: registry.fly.io
+      #     username: x
+      #     password: ${{ secrets.FLY_API_TOKEN }}
 
       - name: 🐳 Docker build
         uses: docker/build-push-action@v4
         with:
           context: .
-          push: true
+          push: false  # true
           tags: registry.fly.io/${{ steps.app_name.outputs.value }}:${{ github.ref_name }}-${{ github.sha }}
           build-args: |
             COMMIT_SHA=${{ github.sha }}
