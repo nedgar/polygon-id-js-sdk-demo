@@ -30,7 +30,7 @@ export function AuthRequestDescription({ message }: Props) {
       {zkpRequests.map((req, i) => (
         <Fragment key={i}>
           <br />
-          <p>ZK Proof request{isMulti ? ` ${i + 1}` : ""}:</p>
+          <p>ZKP request {i + 1} of {zkpRequests.length}:</p>
           <div className="ml-2">
             <ObjectGrid
               obj={{

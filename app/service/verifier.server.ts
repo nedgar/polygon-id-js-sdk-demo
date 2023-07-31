@@ -142,7 +142,6 @@ export async function verifyAuthResponse(authToken: string): Promise<VerifyAuthR
     authResponse = unpackedMessage as AuthorizationResponseMessage;
     const verifier = await getAuthVerifier();
     checks.authVerified = false;
-
     await verifier.verifyAuthResponse(
       authResponse as protocol.AuthorizationResponseMessage,
       threadState.authRequest as protocol.AuthorizationRequestMessage

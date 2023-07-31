@@ -221,22 +221,25 @@ function AuthResponseVerification({ checks, errors }: VerifyAuthResponseResult) 
           <li>JWZ token syntax is valid: {boolToSymbol(checks.tokenSyntax)}</li>
           <li>response media type is Iden3 ZKP: {boolToSymbol(checks.mediaType)}</li>
           <li>payload signature is valid (signed by user, no tampering)</li>
-          <li>a matching request exists (same ID and schema): {boolToSymbol(checks.requestExists)}</li>
-          <li>ZKP of credential claim is satisfied: {boolToSymbol(checks.authVerified)}</li>
+          <li>for each ZKP response:</li>
           <ul className="ml-4 list-inside list-disc">
-            <li>user is the claim's subject</li>
-            <li>claim schema matches request</li>
-            <li>claim has not expired</li>
-            <li>issuer's auth claim is valid:</li>
+            <li>a matching ZKP request exists (same ID and schema): {boolToSymbol(checks.requestExists)}</li>
+            <li>ZKP is satisfied: {boolToSymbol(checks.authVerified)}</li>
             <ul className="ml-4 list-inside list-disc">
-              <li>auth claim schema is Iden3 AuthV2</li>
-              <li>auth claim exists and has not been revoked from issuer's ID state (MTP)</li>
-              <li>(issuer's public key is extracted from auth claim)</li>
+              <li>user is the claim's subject</li>
+              <li>claim schema matches request</li>
+              <li>claim has not expired</li>
+              <li>issuer's auth claim is valid:</li>
+              <ul className="ml-4 list-inside list-disc">
+                <li>auth claim schema is Iden3 AuthV2</li>
+                <li>auth claim exists and has not been revoked from issuer's ID state (MTP)</li>
+                <li>(issuer's public key is extracted from auth claim)</li>
+              </ul>
+              <li>claim signature is valid (claim signed by issuer, no tampering)</li>
+              <li>claim exists and has not been revoked from issuer's ID state</li>
+              <li>queried property exists in credential (MTP)</li>
+              <li>query is satisfied by property value</li>
             </ul>
-            <li>claim signature is valid (claim signed by issuer, no tampering)</li>
-            <li>claim exists and has not been revoked from issuer's ID state</li>
-            <li>queried property exists in credential (MTP)</li>
-            <li>query is satisfied by property value</li>
           </ul>
         </ul>
       </div>
@@ -511,7 +514,7 @@ export default function VerificationPage() {
                 {zkpResponses.map((zkpResp, i) => (
                   <Fragment key={i}>
                     <br />
-                    <p>ZK Proof Response{zkpResponses.length > 1 ? ` ${i + 1}` : ""}:</p>
+                    <p>ZKP response {i + 1} of {zkpResponses.length}:</p>
                     <div className="border" key={i}>
                       <ZKProofDescription proof={zkpResp} />
                     </div>
