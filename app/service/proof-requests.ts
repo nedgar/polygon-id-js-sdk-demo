@@ -99,7 +99,7 @@ export function getFinancialBankAccountRequest(): ZeroKnowledgeProofRequest {
       type: "BankAccount",
       context: CCG_TRACEABILITY_CONTEXT_URL,
       credentialSubject: {
-        accountId: {},
+        iban: {},
       },
     },
   };
