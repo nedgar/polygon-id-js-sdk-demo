@@ -1,19 +1,13 @@
 import type {
   AuthorizationRequestMessage,
   AuthorizationResponseMessage,
-  CircuitId,
-  ICircuitStorage
 } from "@0xpolygonid/js-sdk";
-import {
-  PROTOCOL_CONSTANTS
-} from "@0xpolygonid/js-sdk";
-import type { loaders, protocol } from "@iden3/js-iden3-auth";
+import { PROTOCOL_CONSTANTS } from "@0xpolygonid/js-sdk";
 import { auth, resolver } from "@iden3/js-iden3-auth";
 
 import config from "~/config.server";
 import type { ChallengeType } from "~/shared/challenge-type";
 import { getAuthRequest } from "./auth-requests";
-import { getCircuitStorage } from "./circuits.server";
 import { credentialWallet, dataStorage, identityWallet } from "./identity.server";
 import { initServices } from "./services.server";
 
@@ -68,23 +62,15 @@ export function getAuthRequestMessage(verifierDID: string, challengeType: Challe
   return authRequest;
 }
 
-class VerificationKeyLoader implements loaders.IKeyLoader {
-  constructor(private readonly _circuitStorage: ICircuitStorage) {}
-
-  async load(circuitId: string): Promise<Uint8Array> {
-    const { verificationKey } = await this._circuitStorage.loadCircuitData(circuitId as CircuitId);
-    return verificationKey;
-  }
-}
-
 async function getAuthVerifier() {
-  const verificationKeyloader = new VerificationKeyLoader(await getCircuitStorage());
-
   const ethStateResolver = new resolver.EthStateResolver(config.rpcUrl, config.contractAddress);
   const resolvers: resolver.Resolvers = {
     "polygon:mumbai": ethStateResolver, // TODO: allow multiple blockchain / network resolvers
   };
-  return auth.Verifier.newVerifier(verificationKeyloader, resolvers);
+  return auth.Verifier.newVerifier({
+    circuitsDir: "app/circuits",
+    stateResolver: resolvers,
+  });
 }
 
 export type VerifyAuthResponseChecks = {
@@ -142,10 +128,7 @@ export async function verifyAuthResponse(authToken: string): Promise<VerifyAuthR
     authResponse = unpackedMessage as AuthorizationResponseMessage;
     const verifier = await getAuthVerifier();
     checks.authVerified = false;
-    await verifier.verifyAuthResponse(
-      authResponse as protocol.AuthorizationResponseMessage,
-      threadState.authRequest as protocol.AuthorizationRequestMessage
-    );
+    await verifier.verifyAuthResponse(authResponse, threadState.authRequest);
     checks.authVerified = true;
 
     setVerifierThreadState(unpackedMessage.thid, {

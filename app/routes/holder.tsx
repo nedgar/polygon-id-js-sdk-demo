@@ -54,7 +54,7 @@ export const loader = async ({ request }: LoaderArgs): Promise<TypedResponse<Hol
   const subjectCredentials = await getSubjectCredentials(userId, HOLDER_ALIAS);
   return json({
     keyData,
-    issuerDID: issuerDID?.toString(),
+    issuerDID: issuerDID?.string(),
     authCredential,
     subjectCredentials,
   });

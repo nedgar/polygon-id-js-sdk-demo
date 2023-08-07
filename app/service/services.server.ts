@@ -77,7 +77,7 @@ export async function initServices(
     proofService.verifyState.bind(proofService)
   );
 
-  const authHandler: IAuthHandler = new AuthHandler(packageManager, proofService, credentialWallet);
+  const authHandler: IAuthHandler = new AuthHandler(packageManager, proofService);
 
   return {
     proofService,

@@ -23,7 +23,7 @@ export async function requestCredential(
   invariant(subjectDID, "missing subject DID");
 
   const req = getCredentialRequest(subjectDID, credentialType);
-  return await issueCredential(userId, issuerAlias, req);
+  return await issueCredential(issuerDID, req);
 }
 
 function getCredentialRequest(subjectDID: DID, type: CredentialRequestType) {
@@ -56,7 +56,7 @@ function getFinancialAUMRequest(
       "https://raw.githubusercontent.com/nedgar/polygon-id-js-sdk-demo/main/schemas/json/AssetsUnderManagement-v1.json",
     type: "AssetsUnderManagement",
     credentialSubject: {
-      id: subjectDID.toString(),
+      id: subjectDID.string(),
       currencyCode: getNumericCurrencyCode(currencyCode),
       valuation,
     },
@@ -70,7 +70,7 @@ function getFinancialBankAccount(subjectDID: DID): Partial<CredentialRequest> {
       "https://raw.githubusercontent.com/nedgar/polygon-id-js-sdk-demo/main/schemas/json/BankAccountCredential-v1.json",
     type: "BankAccount",
     credentialSubject: {
-      id: subjectDID.toString(),
+      id: subjectDID.string(),
       accountId: "1111111",
       BIC11: "TDOMCATTTOR", // TODO: change to HSBC
       familyName: "Smith",
@@ -98,7 +98,7 @@ function getKYCAgeRequest(subjectDID: DID): Partial<CredentialRequest> {
       "https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v3.json",
     type: "KYCAgeCredential",
     credentialSubject: {
-      id: subjectDID.toString(),
+      id: subjectDID.string(),
       birthday: 19960424,
       documentType: 99,
     },
@@ -112,7 +112,7 @@ function getKYCCountryOfResidenceRequest(subjectDID: DID): Partial<CredentialReq
       "https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCCountryOfResidenceCredential-v2.json",
     type: "KYCCountryOfResidenceCredential",
     credentialSubject: {
-      id: subjectDID.toString(),
+      id: subjectDID.string(),
       countryCode: getNumericCountryCode("CA"),
       documentType: 99,
     },
@@ -127,7 +127,7 @@ function getPassportRequest(subjectDID: DID): Partial<CredentialRequest> {
       "https://raw.githubusercontent.com/nedgar/polygon-id-js-sdk-demo/main/schemas/json/Passport-v1.json",
     type: "PassportCredential",
     credentialSubject: {
-      id: subjectDID.toString(),
+      id: subjectDID.string(),
       countryCode: getNumericCountryCode("UA"),
       passportNumber: "L898902C3",
       documentType: 80, // P in ASCII
@@ -137,11 +137,11 @@ function getPassportRequest(subjectDID: DID): Partial<CredentialRequest> {
 }
 
 export async function issueCredential(
-  userId: string,
-  issuerAlias: string,
+  issuerDID: DID,
   req: Partial<CredentialRequest>
 ) {
-  const issuerDID = getDID(userId, issuerAlias);
+  console.log("[issueCredential] issuerDID:", issuerDID);
+  console.log("[issueCredential] req:", req);
   invariant(issuerDID, "missing issuer DID");
 
   const credential = await identityWallet.issueCredential(issuerDID, {
@@ -151,6 +151,8 @@ export async function issueCredential(
       type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
     },
   } as CredentialRequest);
+  console.log("[issueCredential] credential:", credential);
+
   await credentialWallet.save(credential);
 
   return credential;

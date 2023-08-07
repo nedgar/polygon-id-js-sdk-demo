@@ -29,7 +29,7 @@ import {
   OnChainResolver,
   RHSResolver
 } from "@0xpolygonid/js-sdk";
-import type { PublicKey } from "@iden3/js-crypto";
+import { PublicKey } from "@iden3/js-crypto";
 import type { DID } from "@iden3/js-iden3-core";
 import { BytesHelper } from "@iden3/js-iden3-core";
 import { randomBytes } from "crypto";
@@ -168,16 +168,18 @@ export interface KeyData {
 export async function getKeyData(userId: string, alias: string): Promise<KeyData | undefined> {
   const idData = getIdentityData(userId, alias);
   if (idData) {
-    const publicKey = (await kms.publicKey(idData.keyId)) as PublicKey;
-    invariant(typeof publicKey === "object");
+    const publicKey = await kms.publicKey(idData.keyId);
+    invariant(typeof publicKey === "string");
+
+    const iden3Pk = PublicKey.newFromHex(publicKey);
 
     return {
       keyId: idData.keyId.id, // only serialize the ID part, not the type
       publicKey: {
-        hex: publicKey.hex(),
+        hex: publicKey,
         p: {
-          x: publicKey.p[0].toString(),
-          y: publicKey.p[1].toString(),
+          x: iden3Pk.p[0].toString(),
+          y: iden3Pk.p[1].toString(),
         },
       },
       privateKey: {
@@ -220,9 +222,12 @@ export async function getIssuedCredentials(userId: string, alias: string) {
   const did = getIdentityData(userId, alias)?.did;
   if (did) {
     // no way to query issued creds directly
-    const credentials = await credentialWallet.list();
+    const credentials = await credentialWallet.findByQuery({
+      allowedIssuers: [did.string()]
+    });
+    console.log("[getIssuedCredentials] credentials:", credentials);
     return credentials.filter(
-      (cred) => cred.issuer === did.toString() && !!cred.credentialSubject?.id
+      (cred) => !!cred.credentialSubject?.id
     );
   } else {
     return [];
@@ -233,7 +238,7 @@ export async function getSubjectCredentials(userId: string, alias: string) {
   const did = getIdentityData(userId, alias)?.did;
   if (did) {
     return await credentialWallet.findByQuery({
-      credentialSubjectId: did.toString(),
+      credentialSubjectId: did.string(),
     });
   } else {
     return [];
@@ -255,7 +260,7 @@ export async function findMatchingCredentials(
   // find creds matching first query
   let credentials = await credentialWallet.findByQuery({
     ...first.query,
-    credentialSubjectId: userDID.toString(),
+    credentialSubjectId: userDID.string(),
   });
 
   // filter down further for any other queries, matching against same claim
@@ -265,7 +270,7 @@ export async function findMatchingCredentials(
         await credentialWallet.findByQuery({
           ...other.query,
           claimId: cred.id,
-          credentialSubjectId: userDID.toString(),
+          credentialSubjectId: userDID.string(),
         })
     );
   }

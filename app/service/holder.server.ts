@@ -3,13 +3,11 @@ import type {
   AuthorizationResponseMessage,
   JSONObject,
   W3CCredential,
-  ZKPRequestWithCredential,
   ZeroKnowledgeProofRequest,
 } from "@0xpolygonid/js-sdk";
 import { Poseidon } from "@iden3/js-crypto";
 import { DID } from "@iden3/js-iden3-core";
 import { Token } from "@iden3/js-jwz";
-
 import invariant from "tiny-invariant";
 
 import { credentialWallet, dataStorage, identityWallet } from "./identity.server";
@@ -61,21 +59,31 @@ export async function generateAuthResponse(
   const credential = await credentialWallet.findById(credentialId);
   invariant(credential, `credential not found: ${credentialId}`);
 
-  const requestsWithCreds: ZKPRequestWithCredential[] = scope.map((req) => ({
-    req: hashQueryValueIfNeeded(req),
-    credential,
-    credentialSubjectProfileNonce: 0,
-  }));
-
   const { authHandler } = await initServices(identityWallet, credentialWallet, dataStorage.states);
 
-  const authProfileNonce = 0;
-  const result = await authHandler.generateAuthorizationResponse(
-    DID.parse(userDID),
-    authProfileNonce,
-    authRequest,
-    requestsWithCreds
-  );
+  // const requestsWithCreds: ZKPRequestWithCredential[] = scope.map((req) => ({
+  //   req: hashQueryValueIfNeeded(req),
+  //   credential,
+  //   credentialSubjectProfileNonce: 0,
+  // }));
+
+  // const authProfileNonce = 0;
+  // const result = await authHandler.generateAuthorizationResponse(
+  //   DID.parse(userDID),
+  //   authProfileNonce,
+  //   authRequest,
+  //   requestsWithCreds
+  // );
+
+  // FIXME: As of js-sdk v1.0.2, IAuthHandler no longer supports generating an auth response for a given credential,
+  // and the code above no longer works.
+  // For now we fall back to letting it handle the whole request, ignoring the user's choice of credential.
+  // There should only be one credential for a given schema anyway -- any duplicates should be equivalent. 
+  // We should prevent holding multiple credentials for a given schema and type anyway.
+
+  const authRequestBytes = new TextEncoder().encode(JSON.stringify(authRequest));
+  const result = await authHandler.handleAuthorizationRequest(DID.parse(userDID), authRequestBytes);
+  console.log("[generateAuthResponse] result.authResponse:", JSON.stringify(result.authResponse, null, 2));
 
   // parse the token to show in UI
   const parsedToken = await Token.parse(result.token);

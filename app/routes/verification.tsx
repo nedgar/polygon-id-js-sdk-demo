@@ -84,7 +84,7 @@ export const loader = async ({
 
   return json({
     verifierDID: VERIFIER_DID,
-    holderDID: getDID(userId, "holder")?.toString(),
+    holderDID: getDID(userId, "holder")?.string(),
     challengeType: verifierThreadState?.challengeType,
     authRequest: verifierThreadState?.authRequest,
     credential: holderThreadState?.selectedCredential,
