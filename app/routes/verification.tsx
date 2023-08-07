@@ -344,7 +344,13 @@ export default function VerificationPage() {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Section
-            title={<>Verifier Identity {names.verifier && `(${names.verifier})`}</>}
+            title={<>
+              <Link
+                className="text-blue-500 underline"
+                to={{ pathname: "/verifier", search: location.search }}>
+                Verifier
+              </Link>{" "}
+             Identity {names.verifier && `(${names.verifier})`}</>}
             className="border"
           >
             <p>

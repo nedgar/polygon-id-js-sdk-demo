@@ -1,29 +1,31 @@
-import invariant from "tiny-invariant";
 import { ChallengeType } from "~/shared/challenge-type";
-import { getRequiredProofIdsForChallenge } from "./auth-requests";
-import type { ProofRequestId } from "./proof-requests";
-
-export enum PermissionId {
-  CAN_OPEN_NEW_ACCOUNT = "CAN_OPEN_NEW_ACCOUNT",
-  CAN_OPEN_CROSS_BORDER_ACCOUNT = "CAN_OPEN_CROSS_BORDER_ACCOUNT",
-}
 
 export interface Permission {
-  id: PermissionId;
+  id: string;
   name: string;
-  challengeTypes: ChallengeType[];
+  challengeType: ChallengeType;
+}
+
+export interface UserPermission {
+  permission: Permission;
+  granted: boolean;
 }
 
 const PERMISSIONS: Permission[] = [
   {
-    id: PermissionId.CAN_OPEN_NEW_ACCOUNT,
+    id: "CAN_OPEN_NEW_ACCOUNT",
     name: "Can Open New Account",
-    challengeTypes: [ChallengeType.KYC_USER_IS_ADULT, ChallengeType.KYC_COUNTRY_NOT_SANCTIONED],
+    challengeType: ChallengeType.KYC_COUNTRY_NOT_SANCTIONED,
   },
   {
-    id: PermissionId.CAN_OPEN_CROSS_BORDER_ACCOUNT,
+    id: "CAN_OPEN_CROSS_BORDER_ACCOUNT",
     name: "Can Open Cross-Border Account",
-    challengeTypes: [ChallengeType.FIN_DISCLOSE_BANK_ACCOUNT, ChallengeType.ID_PASSPORT_MATCHES],
+    challengeType: ChallengeType.FIN_DISCLOSE_BANK_ACCOUNT,
+  },
+  {
+    id: "CAN_TRADE_STABLECOIN",
+    name: "Can Trade Stablecoin On-chain",
+    challengeType: ChallengeType.FIN_DISCLOSE_BANK_ACCOUNT,
   },
 ];
 
@@ -31,17 +33,24 @@ export function getAvailablePermissions() {
   return PERMISSIONS;
 }
 
-export function getRequiredProofIds(permissionId: PermissionId) {
-  const perm = PERMISSIONS.find((p) => p.id === permissionId);
-  invariant(perm, "Unsupported permission ID");
-
-  const proofIds: ProofRequestId[] = [];
-  for (const challengeType of perm.challengeTypes) {
-    for (const proofId of getRequiredProofIdsForChallenge(challengeType)) {
-      if (!proofIds.includes(proofId)) {
-        proofIds.push(proofId);
-      }
-    }
-  }
-  return proofIds;
+export function getUserPermissionsForChallengeType(challengeType: ChallengeType): UserPermission[] {
+  return getAvailablePermissions()
+    .filter((p) => p.challengeType === challengeType)
+    .map((p) => ({
+      permission: p,
+      granted: false,
+    }));
 }
+
+// export function getRequiredProofIds(permissionId: string) {
+//   const perm = PERMISSIONS.find((p) => p.id === permissionId);
+//   invariant(perm, "Unsupported permission ID");
+
+//   const proofIds: ProofRequestId[] = [];
+//   for (const proofId of getRequiredProofIdsForChallenge(perm.challengeType)) {
+//     if (!proofIds.includes(proofId)) {
+//       proofIds.push(proofId);
+//     }
+//   }
+//   return proofIds;
+// }

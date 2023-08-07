@@ -197,11 +197,11 @@ export async function createIdentity(userId: string, alias: string) {
     method: core.DidMethod.PolygonId,
     blockchain: core.Blockchain.Polygon,
     networkId: core.NetworkId.Mumbai,
+    seed: idData.seed,
     revocationOpts: {
       id: rhsUrl,
       type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
     },
-    seed: idData.seed,
   });
   idData.did = did;
   idData.authCredential = credential;
