@@ -77,7 +77,6 @@ export const loader = async ({
 
   const searchParams = new URL(request.url).searchParams;
   const threadId = searchParams.get("thid");
-  console.log("threadId:", threadId);
 
   const holderThreadState = threadId ? getHolderThreadState(threadId) : undefined;
   const verifierThreadState = threadId ? getVerifierThreadState(threadId) : undefined;

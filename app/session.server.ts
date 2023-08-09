@@ -10,7 +10,7 @@ const HTTPS_PORTS = [443, 9443];
 
 // const isSecure = process.env.NODE_ENV === "production";
 const isSecure = HTTPS_PORTS.includes(Number(process.env.PORT));
-console.log("isSecure:", isSecure);
+// console.log("isSecure:", isSecure);
 
 export const sessionStorage = createCookieSessionStorage({
   cookie: {
